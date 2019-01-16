@@ -1,5 +1,5 @@
 //====================================================================================================================================
-// Multi-platform general-puprpose high-precision timer
+// Helper functions for OpenCL-based applications
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 
@@ -10,16 +10,16 @@
 #include <CL/cl.h>
 
 #define STRING_BUFFER_LEN 1024
-#define AOCL_ALIGNMENT 64
+#define AOC_ALIGNMENT 64
 
 // For functions that "return" the error code
-#define CL_SAFE_CALL(...) do {													\
-	cl_int __ret = __VA_ARGS__;												\
-	if (__ret != CL_SUCCESS) {												\
+#define CL_SAFE_CALL(...) do {																		\
+	cl_int __ret = __VA_ARGS__;																		\
+	if (__ret != CL_SUCCESS) {																		\
 		fprintf(stderr, "%s:%d: %s failed with error code ", __FILE__, __LINE__, extractFunctionName(#__VA_ARGS__) );	\
-		display_error_message(__ret, stderr);										\
-		exit(-1);													\
-	}															\
+		display_error_message(__ret, stderr);															\
+		exit(-1);																					\
+	}																							\
 } while (0)
 
 // Declaring some of the functions here to avoid reordering them
@@ -420,7 +420,7 @@ inline static char* read_kernel(const char *kernel_file_path, size_t *source_siz
 inline static void* alignedMalloc(size_t size)
 {
 	void *ptr = NULL;
-	if ( posix_memalign (&ptr, AOCL_ALIGNMENT, size) )
+	if ( posix_memalign (&ptr, AOC_ALIGNMENT, size) )
 	{
 		fprintf(stderr, "Aligned Malloc failed due to insufficient memory.\n");
 		exit(-1);
@@ -431,7 +431,7 @@ inline static void* alignedMalloc(size_t size)
 inline static void* alignedCalloc(size_t num, size_t size)
 {
 	void *ptr = NULL;
-	if ( posix_memalign (&ptr, AOCL_ALIGNMENT, num * size) )
+	if ( posix_memalign (&ptr, AOC_ALIGNMENT, num * size) )
 	{
 		fprintf(stderr, "Aligned Calloc failed due to insufficient memory.\n");
 		exit(-1);
