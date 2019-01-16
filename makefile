@@ -4,7 +4,7 @@ HOST = $(NAME).c
 HOST_BINARY = $(NAME)
 KERNEL = $(NAME).cl
 HOST_COMPILER = gcc
-HOST_FLAGS = -O3
+HOST_FLAGS = -O3 -fopenmp -lrt
 
 ifeq ($(INTEL_FPGA),1)
 	INC = $(shell aocl compile-config)
@@ -26,6 +26,11 @@ ifeq ($(INTEL_FPGA),1)
 	ifdef VEC
 		HOST_FLAGS += -DVEC=$(VEC)
 		KERNEL_FLAGS += -DVEC=$(VEC)
+	endif
+
+	ifdef WGS
+		HOST_FLAGS += -DWGS=$(WGS)
+		KERNEL_FLAGS += -DWGS=$(WGS)
 	endif
 	
 	ifdef NO_INTER
