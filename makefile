@@ -6,7 +6,7 @@ KERNEL = $(NAME).cl
 HOST_COMPILER = gcc
 HOST_FLAGS = -O3
 
-ifneq ($(INTEL_FPGA),)
+ifeq ($(INTEL_FPGA),1)
 	INC = $(shell aocl compile-config)
 	LIB = $(shell aocl link-config) -lOpenCL
 	KERNEL_COMPILER = aoc
@@ -29,7 +29,7 @@ ifneq ($(INTEL_FPGA),)
 	endif
 	
 	ifdef NO_INTER
-		HOST_FLAGS += -DNO_INTERLEAVE
+		-Wdeprecated-declarations-DNO_INTERLEAVE
 		KERNEL_FLAGS += --no-interleaving default
 	endif
 
@@ -44,20 +44,21 @@ ifneq ($(INTEL_FPGA),)
 	ifdef SEED
 		KERNEL_FLAGS += --seed $(SEED)
 	endif
-else ifneq ($(AMD),)
+else ifeq ($(AMD),1)
 	KERNEL_BINARY =
 	OPENCL_DIR = $(AMDAPPSDKROOT)
 	INC += -I$(OPENCL_DIR)/include/
 	LIB += -L$(OPENCL_DIR)/lib/x86_64/ -lOpenCL
+	HOST_FLAGS += -Wno-deprecated-declarations
 endif
 
-all: host kernel
+all: $(HOST_BINARY) $(KERNEL_BINARY)
 
-host: $(HOST)
+$(HOST_BINARY): $(HOST)
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
 	
-kernel: $(KERNEL)
+$(KERNEL_BINARY): $(KERNEL)
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(KERNEL_BINARY)
 
 clean:
-rm -f $(HOST_BINARY)
+	rm -f $(HOST_BINARY)
