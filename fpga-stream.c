@@ -39,7 +39,7 @@ static inline void init()
 	cl_context_properties ctxprop[3];
 
 	display_device_info(&platforms, &platformCount);
-	select_device_type(platforms, &platformCount, &deviceType);
+	select_device_type(&deviceType);
 	validate_selection(platforms, &platformCount, ctxprop, &deviceType);
 	
 	// create OpenCL context
@@ -98,7 +98,7 @@ void usage(char **argv)
 int main(int argc, char **argv)
 {
 	// input arguments
-	int size = 100; 								// array size, default size is 100 MiB
+	int size = 100 * 256 * 1024; 						// array size, default size is 100 MiB
 	int iter = 1;									// number of iterations
 
 	// timing measurement
@@ -137,10 +137,6 @@ int main(int argc, char **argv)
 	// OpenCL initialization
 	init();
 
-	// set lcoal and global work size
-	size_t localSize[3] = {(size_t)WGS, 1, 1};
-	size_t globalSize[3] = {(size_t)size, 1, 1};
-
 	// load kernel file and build program
 	size_t kernelFileSize;
 #ifdef INTEL_FPGA
@@ -157,8 +153,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	char clOptions[200];
-	sprintf(clOptions, "");
+	char clOptions[200] = "";
 
 #ifndef INTEL_FPGA
 	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d -DNDR", VEC, WGS);
@@ -204,18 +199,18 @@ int main(int argc, char **argv)
 	// create device buffers
 #ifdef NO_INTERLEAVE
 	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size:%d) failed with error: ", size, error); display_error_message(error, stdout); return -1;}
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
 	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size:%d) failed with error: ", size, error); display_error_message(error, stdout); return -1;}
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
 	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_BANK_2_ALTERA, size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size:%d) failed with error: ", size, error); display_error_message(error, stdout); return -1;}
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
 #else
 	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size:%d) failed with error: ", size, error); display_error_message(error, stdout); return -1;}
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
 	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size:%d) failed with error: ", size, error); display_error_message(error, stdout); return -1;}
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
 	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size:%d) failed with error: ", size, error); display_error_message(error, stdout); return -1;}
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
 #endif
 
 	//write buffers
@@ -249,6 +244,10 @@ int main(int argc, char **argv)
 	GetTime(start);
 
 #ifdef NDR
+	// set lcoal and global work size
+	size_t localSize[3] = {(size_t)WGS, 1, 1};
+	size_t globalSize[3] = {(size_t)size, 1, 1};
+
 	CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
 #else
 	CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
