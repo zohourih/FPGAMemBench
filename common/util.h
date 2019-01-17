@@ -131,7 +131,7 @@ inline static void display_device_info(cl_platform_id** platforms, cl_uint* plat
 }
 
 // Selects device type based on user input
-inline static void select_device_interactive(cl_platform_id* platforms, cl_uint* platformCount, cl_device_type* device_type)
+inline static void select_device_interactive(cl_device_type* device_type)
 {
 	unsigned valid = 0;
 	char device_type_char[2];
@@ -163,7 +163,7 @@ inline static void select_device_interactive(cl_platform_id* platforms, cl_uint*
 }
 
 // Checks to see if environmental variable for choosing device type is set or not
-inline static void select_device_type(cl_platform_id* platforms, cl_uint* platformCount, cl_device_type* device_type)
+inline static void select_device_type(cl_device_type* device_type)
 {
 	char *dev_type_env = getenv("DEVICE_TYPE");
 
@@ -195,7 +195,7 @@ inline static void select_device_type(cl_platform_id* platforms, cl_uint* platfo
 		}
 	}
 
-	select_device_interactive(platforms, platformCount, device_type);
+	select_device_interactive(device_type);
 }
 
 // Validates device type selection and exports context properties
