@@ -1,11 +1,10 @@
-
 NAME = fpga-stream
 HOST_FILE = $(NAME).c
 HOST_BINARY = $(NAME)
 KERNEL = $(NAME)-kernel
 KERNEL_FILE = $(KERNEL).cl
 HOST_COMPILER = gcc
-HOST_FLAGS = -O3 -fopenmp -lrt
+HOST_FLAGS = -O3 -Wall -Wextra -fopenmp -lrt
 
 ifeq ($(INTEL_FPGA),1)
 	INC = $(shell aocl compile-config)
@@ -23,21 +22,6 @@ ifeq ($(INTEL_FPGA),1)
 	ifdef EMULATOR
 		HOST_FLAGS += -DEMULATOR
 		KERNEL_FLAGS += -march=emulator
-	endif
-	
-	ifdef NDR
-		HOST_FLAGS += -DNDR
-		KERNEL_FLAGS += -DNDR
-	endif
-
-	ifdef VEC
-		HOST_FLAGS += -DVEC=$(VEC)
-		KERNEL_FLAGS += -DVEC=$(VEC)
-	endif
-
-	ifdef WGS
-		HOST_FLAGS += -DWGS=$(WGS)
-		KERNEL_FLAGS += -DWGS=$(WGS)
 	endif
 	
 	ifdef NO_INTER
@@ -62,6 +46,26 @@ else ifeq ($(AMD),1)
 	INC += -I$(OPENCL_DIR)/include/
 	LIB += -L$(OPENCL_DIR)/lib/x86_64/ -lOpenCL
 	HOST_FLAGS += -Wno-deprecated-declarations
+else ifeq ($(NVIDIA),1)
+	KERNEL_BINARY =
+	INC += -I$(CUDA_DIR)/include/
+	LIB += -L$(CUDA_DIR)/lib64/ -lOpenCL
+	HOST_FLAGS += -Wno-deprecated-declarations
+endif
+
+ifdef NDR
+	HOST_FLAGS += -DNDR
+	KERNEL_FLAGS += -DNDR
+endif
+
+ifdef VEC
+	HOST_FLAGS += -DVEC=$(VEC)
+	KERNEL_FLAGS += -DVEC=$(VEC)
+endif
+
+ifdef WGS
+	HOST_FLAGS += -DWGS=$(WGS)
+	KERNEL_FLAGS += -DWGS=$(WGS)
 endif
 
 all: $(HOST_BINARY) $(KERNEL_BINARY)
