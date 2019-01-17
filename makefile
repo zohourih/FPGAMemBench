@@ -4,7 +4,7 @@ HOST_BINARY = $(NAME)
 KERNEL = $(NAME)-kernel
 KERNEL_FILE = $(KERNEL).cl
 HOST_COMPILER = gcc
-HOST_FLAGS = -O3 -Wall -Wextra -fopenmp -lrt
+HOST_FLAGS = -O3 -Wall -Wextra -lrt
 
 ifeq ($(INTEL_FPGA),1)
 	INC = $(shell aocl compile-config)

@@ -182,21 +182,26 @@ int main(int argc, char **argv)
 	clReleaseProgram(prog);
 
 	// create host buffers
+	printf("Creating host buffers...\n");
 	float* hostA = alignedMalloc(size * sizeof(float));
 	float* hostB = alignedMalloc(size * sizeof(float));
 	float* hostC = alignedMalloc(size * sizeof(float));
 
 	// populate host buffers
+	printf("Filling host buffers with random data...\n");
 	srand(time(NULL));
-	#pragma omp parallel for
+	// generate random float numbers between 0 and 1000
 	for (int i = 0; i < size; i++)
 	{
-		// generate random float numbers between 0 and 1000
 		hostA[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
+	}
+	for (int i = 0; i < size; i++)
+	{	
 		hostB[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
 	}
 
 	// create device buffers
+	printf("Creating device buffers...\n");
 #ifdef NO_INTERLEAVE
 	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
@@ -214,6 +219,7 @@ int main(int argc, char **argv)
 #endif
 
 	//write buffers
+	printf("Writing data to device buffers...\n");
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, size * sizeof(float), hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, size * sizeof(float), hostB, 0, 0, 0));
 
@@ -241,6 +247,7 @@ int main(int argc, char **argv)
 #endif
 
 	// copy kernel
+	printf("Executing \"Copy\" kernel...\n");
 	GetTime(start);
 
 #ifdef NDR
@@ -258,6 +265,7 @@ int main(int argc, char **argv)
 	copyTime = TimeDiff(start, end);
 
 	// MAC kernel
+	printf("Executing \"MAC\" kernel...\n");
 	GetTime(start);
 
 #ifdef NDR
@@ -271,11 +279,12 @@ int main(int argc, char **argv)
 	macTime = TimeDiff(start, end);
 
 	// read data back to host
+	printf("Reading data back from device...\n\n");
 	CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, size * sizeof(float), hostC, 0, 0, 0));
 	clFinish(queue);
 
-	printf("Copy: %.2f GiB/s (%.2f GB/s)\n", (double)(size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * copyTime), (double)(size * sizeof(float)) / (1000.0 * 1000.0 * copyTime));
-	printf("MAC : %.2f GiB/s (%.2f GB/s)\n", (double)(size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * macTime ), (double)(size * sizeof(float)) / (1000.0 * 1000.0 * macTime ));
+	printf("Copy: %.2f GiB/s (%.2f GB/s)\n", (double)(2 * size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * copyTime), (double)(2 * size * sizeof(float)) / (1000.0 * 1000.0 * copyTime));
+	printf("MAC : %.2f GiB/s (%.2f GB/s)\n", (double)(3 * size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * macTime ), (double)(3 * size * sizeof(float)) / (1000.0 * 1000.0 * macTime ));
 
 	// OpenCL shutdown
 	shutdown();
