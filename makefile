@@ -1,8 +1,9 @@
 
 NAME = fpga-stream
-HOST = $(NAME).c
+HOST_FILE = $(NAME).c
 HOST_BINARY = $(NAME)
-KERNEL = $(NAME).cl
+KERNEL = $(NAME)-kernel
+KERNEL_FILE = $(KERNEL).cl
 HOST_COMPILER = gcc
 HOST_FLAGS = -O3 -fopenmp -lrt
 
@@ -11,11 +12,17 @@ ifeq ($(INTEL_FPGA),1)
 	LIB = $(shell aocl link-config) -lOpenCL
 	KERNEL_COMPILER = aoc
 	HOST_FLAGS += -DINTEL_FPGA
+	KERNEL_FLAGS = -v --report
 
 	ifdef HOST_ONLY
 		KERNEL_BINARY = 
 	else
-		KERNEL_BINARY = $(NAME).aocx
+		KERNEL_BINARY = $(KERNEL).aocx
+	endif
+
+	ifdef EMULATOR
+		HOST_FLAGS += -DEMULATOR
+		KERNEL_FLAGS += -march=emulator
 	endif
 	
 	ifdef NDR
@@ -34,7 +41,7 @@ ifeq ($(INTEL_FPGA),1)
 	endif
 	
 	ifdef NO_INTER
-		-Wdeprecated-declarations-DNO_INTERLEAVE
+		HOST_FLAGS += -DNO_INTERLEAVE
 		KERNEL_FLAGS += --no-interleaving default
 	endif
 
@@ -59,11 +66,14 @@ endif
 
 all: $(HOST_BINARY) $(KERNEL_BINARY)
 
-$(HOST_BINARY): $(HOST)
+$(HOST_BINARY): $(HOST_FILE)
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
 	
-$(KERNEL_BINARY): $(KERNEL)
+$(KERNEL_BINARY): $(KERNEL_FILE)
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(KERNEL_BINARY)
 
 clean:
 	rm -f $(HOST_BINARY)
+	
+clean-kernel:
+	rm -rf $(KERNEL).aocx $(KERNEL).aoco $(KERNEL)

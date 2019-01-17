@@ -31,7 +31,7 @@ static cl_int           deviceCount;
 
 static inline void init()
 {
-	size_t size;
+	size_t deviceSize;
 	cl_int error;
 	cl_uint platformCount;
 	cl_platform_id* platforms = NULL;
@@ -52,8 +52,8 @@ static inline void init()
 	}
 
 	// get list of devices
-	CL_SAFE_CALL( clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &size) );
-	deviceCount = (int) (size / sizeof(cl_device_id));
+	CL_SAFE_CALL( clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &deviceSize) );
+	deviceCount = (int) (deviceSize / sizeof(cl_device_id));
 	if(deviceCount < 1)
 	{
 		printf("ERROR: No devices found.\n");
@@ -68,7 +68,7 @@ static inline void init()
 		exit(-1);
 	}
 
-	CL_SAFE_CALL( clGetContextInfo(context, CL_CONTEXT_DEVICES, size, deviceList, NULL) );
+	CL_SAFE_CALL( clGetContextInfo(context, CL_CONTEXT_DEVICES, deviceSize, deviceList, NULL) );
 
 	// create command queue for the first device
 	queue = clCreateCommandQueue(context, deviceList[0], 0, NULL);
@@ -144,10 +144,10 @@ int main(int argc, char **argv)
 	// load kernel file and build program
 	size_t kernelFileSize;
 #ifdef INTEL_FPGA
-	char *kernelSource = read_kernel("fpga-stream.aocx", &kernelFileSize);
+	char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
 	cl_program prog = clCreateProgramWithBinary(context, 1, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
 #else
-	char *kernelSource = read_kernel("fpga-stream.cl", &kernelFileSize);
+	char *kernelSource = read_kernel("fpga-stream-kernel.cl", &kernelFileSize);
 	cl_program prog = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &error);
 #endif
 	if(error != CL_SUCCESS)
@@ -226,23 +226,23 @@ int main(int argc, char **argv)
 	float constValue = (float)rand() / (float)(RAND_MAX);
 
 #ifdef NDR
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC ) );
+	CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+	CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
 
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
 	CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
 #else
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(void*   ), (void*) &size    ) );
+	CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+	CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
+	CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &size      ) );
 
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
 	CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(void*   ), (void*) &size    ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &size      ) );
 #endif
 
 	// copy kernel
@@ -275,8 +275,8 @@ int main(int argc, char **argv)
 	CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, size * sizeof(float), hostC, 0, 0, 0));
 	clFinish(queue);
 
-	printf("Copy: %f GiB/s (%f GB/s)\n", (double)(size * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * copyTime), (double)(size * sizeof(float)) / (1000.0 * 1000.0 * 1000.0 * copyTime));
-	printf("MAC : %f GiB/s (%f GB/s)\n", (double)(size * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * macTime ), (double)(size * sizeof(float)) / (1000.0 * 1000.0 * 1000.0 * macTime ));
+	printf("Copy: %.2f GiB/s (%.2f GB/s)\n", (double)(size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * copyTime), (double)(size * sizeof(float)) / (1000.0 * 1000.0 * copyTime));
+	printf("MAC : %.2f GiB/s (%.2f GB/s)\n", (double)(size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * macTime ), (double)(size * sizeof(float)) / (1000.0 * 1000.0 * macTime ));
 
 	// OpenCL shutdown
 	shutdown();
