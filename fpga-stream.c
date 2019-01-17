@@ -156,7 +156,11 @@ int main(int argc, char **argv)
 	char clOptions[200] = "";
 
 #ifndef INTEL_FPGA
-	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d -DNDR", VEC, WGS);
+	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d", VEC, WGS);
+#endif
+
+#ifdef NDR
+	sprintf(clOptions + strlen(clOptions), " -DNDR");
 #endif
 
 	// compile kernel file
@@ -190,13 +194,14 @@ int main(int argc, char **argv)
 	// populate host buffers
 	printf("Filling host buffers with random data...\n");
 	srand(time(NULL));
-	// generate random float numbers between 0 and 1000
 	for (int i = 0; i < size; i++)
 	{
+		// generate random float numbers between 0 and 1000
 		hostA[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
 	}
 	for (int i = 0; i < size; i++)
-	{	
+	{
+		// generate random float numbers between 0 and 1000
 		hostB[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
 	}
 
