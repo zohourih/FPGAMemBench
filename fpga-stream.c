@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <omp.h>
 #include <CL/cl.h>
 
 #include "common/util.h"
@@ -207,16 +208,17 @@ int main(int argc, char **argv)
 
 	// populate host buffers
 	printf("Filling host buffers with random data...\n");
-	srand(time(NULL));
-	for (int i = 0; i < array_size; i++)
+
+	#pragma omp parallel default(none) firstprivate(array_size) shared(hostA, hostB)
 	{
-		// generate random float numbers between 0 and 1000
-		hostA[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
-	}
-	for (int i = 0; i < array_size; i++)
-	{
-		// generate random float numbers between 0 and 1000
-		hostB[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
+		uint seed = omp_get_thread_num();
+		#pragma omp for
+		for (int i = 0; i < array_size; i++)
+		{
+			// generate random float numbers between 0 and 1000
+			hostA[i] = 1000.0 * (float)rand_r(&seed) / (float)(RAND_MAX);
+			hostB[i] = 1000.0 * (float)rand_r(&seed) / (float)(RAND_MAX);
+		}
 	}
 
 	// create device buffers
