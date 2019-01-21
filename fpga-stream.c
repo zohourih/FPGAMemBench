@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	// input arguments
 	int size = 100; 								// buffer size, default size is 100 MiB
 	int iter = 1;									// number of iterations
-	int array_size;
+	int array_size, verbose = 0;
 
 	// timing measurement
 	TimeStamp start, end;
@@ -123,6 +123,11 @@ int main(int argc, char **argv)
 		{
 			iter = atoi(argv[arg + 1]);
 			arg += 2;
+		}
+		else if (strcmp(argv[arg], "-v") == 0)
+		{
+			verbose = 1;
+			arg += 1;
 		}
 		else if (strcmp(argv[arg], "-h") == 0 || strcmp(argv[arg], "--help") == 0)
 		{
@@ -164,7 +169,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	char clOptions[200] = "-w ";
+	char clOptions[200] = "";
 
 #ifndef INTEL_FPGA
 	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d ", VEC, WGS);
@@ -201,14 +206,13 @@ int main(int argc, char **argv)
 	printf("Total memory usage: %d MiB\n\n", 3 * size);
 
 	// create host buffers
-	printf("Creating host buffers...\n");
+	if (verbose) printf("Creating host buffers...\n");
 	float* hostA = alignedMalloc(array_size * sizeof(float));
 	float* hostB = alignedMalloc(array_size * sizeof(float));
 	float* hostC = alignedMalloc(array_size * sizeof(float));
 
 	// populate host buffers
-	printf("Filling host buffers with random data...\n");
-
+	if (verbose) printf("Filling host buffers with random data...\n");
 	#pragma omp parallel default(none) firstprivate(array_size) shared(hostA, hostB)
 	{
 		uint seed = omp_get_thread_num();
@@ -222,7 +226,7 @@ int main(int argc, char **argv)
 	}
 
 	// create device buffers
-	printf("Creating device buffers...\n");
+	if (verbose) printf("Creating device buffers...\n");
 #ifdef NO_INTERLEAVE
 	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , array_size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
@@ -240,7 +244,7 @@ int main(int argc, char **argv)
 #endif
 
 	//write buffers
-	printf("Writing data to device...\n");
+	if (verbose) printf("Writing data to device...\n");
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, array_size * sizeof(float), hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, array_size * sizeof(float), hostB, 0, 0, 0));
 
@@ -268,7 +272,7 @@ int main(int argc, char **argv)
 #endif
 
 	// device warm-up
-	printf("Device warm-up...\n");
+	if (verbose) printf("Device warm-up...\n");
 #ifdef NDR
 	CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
 #else
@@ -277,7 +281,7 @@ int main(int argc, char **argv)
 	clFinish(queue);
 
 	// copy kernel
-	printf("Executing \"Copy\" kernel...\n");
+	if (verbose) printf("Executing \"Copy\" kernel...\n");
 	for (int i = 0; i < iter; i++)
 	{
 		GetTime(start);
@@ -294,7 +298,7 @@ int main(int argc, char **argv)
 	}
 
 	// MAC kernel
-	printf("Executing \"MAC\" kernel...\n");
+	if (verbose) printf("Executing \"MAC\" kernel...\n");
 	for (int i = 0; i < iter; i++)
 	{
 		GetTime(start);
@@ -311,7 +315,7 @@ int main(int argc, char **argv)
 	}
 
 	// read data back to host
-	printf("Reading data back from device...\n\n");
+	if (verbose) printf("Reading data back from device...\n\n");
 	CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, array_size * sizeof(float), hostC, 0, 0, 0));
 	clFinish(queue);
 
