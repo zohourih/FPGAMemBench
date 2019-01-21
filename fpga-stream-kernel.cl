@@ -16,7 +16,7 @@ __kernel void copy(__global const float* restrict a, __global float * restrict c
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const int constValue)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue)
 {
 	int i = get_global_id(0);
 	c[i] = constValue * a[i] + b[i];
@@ -39,7 +39,7 @@ __kernel void copy(__global const float* restrict a, __global float * restrict c
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const int constValue, const int size)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int size)
 {
 	for (int i = 0; i != size; i += VEC)
 	{
