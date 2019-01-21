@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include <CL/cl.h>
 
 #include "common/util.h"
@@ -92,18 +93,19 @@ static inline void shutdown()
 
 void usage(char **argv)
 {
-	printf("Usage: %s -s <size in MiB> -n <number of iterations>\n", argv[0]);
+	printf("Usage: %s -s <buffer size in MiB> -n <number of iterations>\n", argv[0]);
 }
 
 int main(int argc, char **argv)
 {
 	// input arguments
-	int size = 100 * 256 * 1024; 						// array size, default size is 100 MiB
+	int size = 100; 								// buffer size, default size is 100 MiB
 	int iter = 1;									// number of iterations
+	int array_size;
 
 	// timing measurement
 	TimeStamp start, end;
-	double copyTime, macTime;
+	double totalCopyTime = 0, totalMacTime = 0, avgCopyTime = 0, avgMacTime = 0;
 
 	// for OpenCL errors
 	cl_int error = 0;
@@ -113,7 +115,7 @@ int main(int argc, char **argv)
 	{
 		if(strcmp(argv[arg], "-s") == 0)
 		{
-			size = atoi(argv[arg + 1]) * 256 * 1024; // convert MiB to number of indexes
+			size = atoi(argv[arg + 1]);
 			arg += 2;
 		}
 		else if (strcmp(argv[arg], "-n") == 0)
@@ -134,6 +136,14 @@ int main(int argc, char **argv)
 		}
 	}
 
+	// set array size based in input buffer size
+	array_size = size * 256 * 1024;				// array size, convert MiB to number of indexes, default is 256k floats (= 100 MiB)
+#ifdef NDR
+	// set lcoal and global work size
+	size_t localSize[3] = {(size_t)WGS, 1, 1};
+	size_t globalSize[3] = {(size_t)array_size, 1, 1};
+#endif
+
 	// OpenCL initialization
 	init();
 
@@ -141,7 +151,7 @@ int main(int argc, char **argv)
 	size_t kernelFileSize;
 #ifdef INTEL_FPGA
 	char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
-	cl_program prog = clCreateProgramWithBinary(context, 1, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
+	cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
 #else
 	char *kernelSource = read_kernel("fpga-stream-kernel.cl", &kernelFileSize);
 	cl_program prog = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &error);
@@ -153,14 +163,14 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	char clOptions[200] = "";
+	char clOptions[200] = "-w ";
 
 #ifndef INTEL_FPGA
-	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d", VEC, WGS);
+	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d ", VEC, WGS);
 #endif
 
 #ifdef NDR
-	sprintf(clOptions + strlen(clOptions), " -DNDR");
+	sprintf(clOptions + strlen(clOptions), "-DNDR");
 #endif
 
 	// compile kernel file
@@ -185,21 +195,25 @@ int main(int argc, char **argv)
 	}
 	clReleaseProgram(prog);
 
+	printf("Array size:         %d indexes\n", array_size);
+	printf("Buffer size:        %d MiB\n", size);
+	printf("Total memory usage: %d MiB\n\n", 3 * size);
+
 	// create host buffers
 	printf("Creating host buffers...\n");
-	float* hostA = alignedMalloc(size * sizeof(float));
-	float* hostB = alignedMalloc(size * sizeof(float));
-	float* hostC = alignedMalloc(size * sizeof(float));
+	float* hostA = alignedMalloc(array_size * sizeof(float));
+	float* hostB = alignedMalloc(array_size * sizeof(float));
+	float* hostC = alignedMalloc(array_size * sizeof(float));
 
 	// populate host buffers
 	printf("Filling host buffers with random data...\n");
 	srand(time(NULL));
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < array_size; i++)
 	{
 		// generate random float numbers between 0 and 1000
 		hostA[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
 	}
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < array_size; i++)
 	{
 		// generate random float numbers between 0 and 1000
 		hostB[i] = 1000.0 * (float)rand() / (float)(RAND_MAX);
@@ -208,25 +222,25 @@ int main(int argc, char **argv)
 	// create device buffers
 	printf("Creating device buffers...\n");
 #ifdef NO_INTERLEAVE
-	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_BANK_2_ALTERA, size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , array_size * sizeof(float), NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , array_size * sizeof(float), NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_BANK_2_ALTERA, array_size * sizeof(float), NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
 #else
-	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY , size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size:%d) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , array_size * sizeof(float), NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY , array_size * sizeof(float), NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, array_size * sizeof(float), NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
 #endif
 
 	//write buffers
-	printf("Writing data to device buffers...\n");
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, size * sizeof(float), hostA, 0, 0, 0));
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, size * sizeof(float), hostB, 0, 0, 0));
+	printf("Writing data to device...\n");
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, array_size * sizeof(float), hostA, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, array_size * sizeof(float), hostB, 0, 0, 0));
 
 	// constValue random float value between 0 and 1 for MAC operation in kernel
 	float constValue = (float)rand() / (float)(RAND_MAX);
@@ -242,54 +256,67 @@ int main(int argc, char **argv)
 #else
 	CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 	CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &size      ) );
+	CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &array_size) );
 
 	CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
 	CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
 	CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
 	CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &size      ) );
+	CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &array_size) );
 #endif
 
-	// copy kernel
-	printf("Executing \"Copy\" kernel...\n");
-	GetTime(start);
-
+	// device warm-up
+	printf("Device warm-up...\n");
 #ifdef NDR
-	// set lcoal and global work size
-	size_t localSize[3] = {(size_t)WGS, 1, 1};
-	size_t globalSize[3] = {(size_t)size, 1, 1};
-
 	CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
 #else
 	CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
 #endif
 	clFinish(queue);
 
-	GetTime(end);
-	copyTime = TimeDiff(start, end);
+	// copy kernel
+	printf("Executing \"Copy\" kernel...\n");
+	for (int i = 0; i < iter; i++)
+	{
+		GetTime(start);
+
+#ifdef NDR
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+#else
+		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
+#endif
+		clFinish(queue);
+
+		GetTime(end);
+		totalCopyTime += TimeDiff(start, end);
+	}
 
 	// MAC kernel
 	printf("Executing \"MAC\" kernel...\n");
-	GetTime(start);
+	for (int i = 0; i < iter; i++)
+	{
+		GetTime(start);
 
 #ifdef NDR
-	CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, macKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, macKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
 #else
-	CL_SAFE_CALL( clEnqueueTask(queue, macKernel, 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue, macKernel, 0, NULL, NULL) );
 #endif
-	clFinish(queue);
+		clFinish(queue);
 
-	GetTime(end);
-	macTime = TimeDiff(start, end);
+		GetTime(end);
+		totalMacTime += TimeDiff(start, end);
+	}
 
 	// read data back to host
 	printf("Reading data back from device...\n\n");
-	CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, size * sizeof(float), hostC, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, array_size * sizeof(float), hostC, 0, 0, 0));
 	clFinish(queue);
 
-	printf("Copy: %.2f GiB/s (%.2f GB/s)\n", (double)(2 * size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * copyTime), (double)(2 * size * sizeof(float)) / (1000.0 * 1000.0 * copyTime));
-	printf("MAC : %.2f GiB/s (%.2f GB/s)\n", (double)(3 * size * 1000.0 * sizeof(float)) / (1024.0 * 1024.0 * 1024.0 * macTime ), (double)(3 * size * sizeof(float)) / (1000.0 * 1000.0 * macTime ));
+	avgCopyTime = totalCopyTime / (double)iter;
+	avgMacTime = totalMacTime / (double)iter;
+	printf("Copy: %.2f GiB/s (%.2f GB/s)\n", (double)(2 * size * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * array_size * sizeof(float)) / (1.0E6 * avgCopyTime));
+	printf("MAC : %.2f GiB/s (%.2f GB/s)\n", (double)(3 * size * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * array_size * sizeof(float)) / (1.0E6 * avgMacTime ));
 
 	// OpenCL shutdown
 	shutdown();
