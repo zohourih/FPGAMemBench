@@ -94,7 +94,7 @@ static inline void shutdown()
 
 void usage(char **argv)
 {
-	printf("Usage: %s -s <buffer size in MiB> -n <number of iterations>\n", argv[0]);
+	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -v (verbose) --verify\n", argv[0]);
 }
 
 int main(int argc, char **argv)
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	// input arguments
 	int size = 100; 								// buffer size, default size is 100 MiB
 	int iter = 1;									// number of iterations
-	int array_size, verbose = 0;
+	int verbose = 0, verify = 0;
 
 	// timing measurement
 	TimeStamp start, end;
@@ -129,6 +129,11 @@ int main(int argc, char **argv)
 			verbose = 1;
 			arg += 1;
 		}
+		else if (strcmp(argv[arg], "--verify") == 0)
+		{
+			verify = 1;
+			arg += 1;
+		}
 		else if (strcmp(argv[arg], "-h") == 0 || strcmp(argv[arg], "--help") == 0)
 		{
 			usage(argv);
@@ -136,14 +141,14 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			printf("Invalid input!\n");
+			printf("\nInvalid input!");
 			usage(argv);
 			exit (-1);
 		}
 	}
 
-	// set array size based in input buffer size
-	array_size = size * 256 * 1024;				// array size, convert MiB to number of indexes, default is 256k floats (= 100 MiB)
+	// set array size based in input buffer size, default is 256k floats (= 100 MiB)
+	int array_size = size * 256 * 1024;
 #ifdef NDR
 	// set lcoal and global work size
 	size_t localSize[3] = {(size_t)WGS, 1, 1};
@@ -297,6 +302,37 @@ int main(int argc, char **argv)
 		totalCopyTime += TimeDiff(start, end);
 	}
 
+	// verify copy kernel
+	if (verify)
+	{
+		// read data back to host
+		printf("Reading data back from device...\n");
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, array_size * sizeof(float), hostC, 0, 0, 0));
+		clFinish(queue);
+
+		printf("Verifying \"Copy\" kernel: ");
+		int success = 1;
+		#pragma omp parallel for ordered default(none) firstprivate(array_size, hostA, hostC) shared(success)
+		for (int i = 0; i < array_size; i++)
+		{
+			if (hostA[i] != hostC[i])
+			{
+				printf("Mismatch at index %d: Expected = %0.6f, Obtained = %0.6f\n", i, hostA[i], hostC[i]);
+				success = 0;
+			}
+		}
+
+		if (success)
+		{
+			printf("SUCCESS!\n");
+		}
+		else
+		{
+			printf("FAILURE!\n");
+		}
+			
+	}
+
 	// MAC kernel
 	if (verbose) printf("Executing \"MAC\" kernel...\n");
 	for (int i = 0; i < iter; i++)
@@ -314,11 +350,38 @@ int main(int argc, char **argv)
 		totalMacTime += TimeDiff(start, end);
 	}
 
-	// read data back to host
-	if (verbose) printf("Reading data back from device...\n\n");
-	CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, array_size * sizeof(float), hostC, 0, 0, 0));
-	clFinish(queue);
+	// verify mac kernel
+	if (verify)
+	{
+		// read data back to host
+		printf("Reading data back from device...\n");
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, array_size * sizeof(float), hostC, 0, 0, 0));
+		clFinish(queue);
 
+		printf("Verifying \"MAC\" kernel: ");
+		int success = 1;
+		#pragma omp parallel for ordered default(none) firstprivate(array_size, constValue, verbose, hostA, hostB, hostC) shared(success)
+		for (int i = 0; i < array_size; i++)
+		{
+			float out = constValue * hostA[i] + hostB[i];
+			if (fabs(hostC[i] - out) > 0.001)
+			{
+				if (verbose) printf("Mismatch at index %d: Expected = %0.6f, Obtained = %0.6f\n", i, out, hostC[i]);
+				success = 0;
+			}
+		}
+
+		if (success)
+		{
+			printf("SUCCESS!\n");
+		}
+		else
+		{
+			printf("FAILURE!\n");
+		}
+	}
+
+	if (verify || verbose) printf("\n");
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
 	printf("Copy: %.2f GiB/s (%.2f GB/s)\n", (double)(2 * size * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * array_size * sizeof(float)) / (1.0E6 * avgCopyTime));
