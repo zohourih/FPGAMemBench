@@ -31,14 +31,14 @@ inline static void device_info_string(cl_device_id device, cl_device_info param,
 {
 	char string[STRING_BUFFER_LEN];
 	CL_SAFE_CALL( clGetDeviceInfo(device, param, STRING_BUFFER_LEN, &string, NULL) );
-	fprintf(stderr, "%-32s= %s\n", name, string);
+	fprintf(stderr, "%-26s= %s\n", name, string);
 }
 
 inline static void device_info_device_type(cl_device_id device, cl_device_info param, const char* name)
 {
 	cl_device_type device_type;
 	CL_SAFE_CALL( clGetDeviceInfo(device, param, sizeof(cl_device_type), &device_type, NULL) );
-	fprintf(stderr, "%-32s= %d\n", name, (int)device_type);
+	fprintf(stderr, "%-26s= %d\n", name, (int)device_type);
 }
 
 // Prints values that are ulong
@@ -48,15 +48,15 @@ inline static void device_info_ulong(cl_device_id device, cl_device_info param, 
 	CL_SAFE_CALL( clGetDeviceInfo(device, param, sizeof(cl_ulong), &size, NULL) );
 	if (param == CL_DEVICE_GLOBAL_MEM_SIZE)
 	{
-		fprintf(stderr, "%-32s= %0.3lf MBytes\n", name, (double)(size/(1024.0*1024.0)));
+		fprintf(stderr, "%-26s= %0.3lf MBytes\n", name, (double)(size/(1024.0*1024.0)));
 	}
 	else if (param == CL_DEVICE_LOCAL_MEM_SIZE || param == CL_DEVICE_GLOBAL_MEM_CACHE_SIZE)
 	{
-		fprintf(stderr, "%-32s= %0.3lf KBytes\n", name, (double)(size/1024.0));
+		fprintf(stderr, "%-26s= %0.3lf KBytes\n", name, (double)(size/1024.0));
 	}
 	else
 	{
-		fprintf(stderr, "%-32s= %lu\n", name, size);
+		fprintf(stderr, "%-26s= %lu\n", name, size);
 	}
 }
 
@@ -65,12 +65,12 @@ inline static void device_info_ulongarray(cl_device_id device, cl_device_info pa
 {
 	cl_ulong* size = (cl_ulong*)malloc(sizeof(cl_ulong) * 3);
 	CL_SAFE_CALL( clGetDeviceInfo(device, param, sizeof(cl_ulong) * 3, size, NULL) );
-	fprintf(stderr, "%-32s= ", name);
-	for (int i = 0; i < 2; i++)
+	fprintf(stderr, "%-26s= ", name);
+	for (int i = 0; i < 3; i++)
 	{
 		fprintf(stderr, "%lu, ", size[i]);
 	}
-	fprintf(stderr, "%lu\n", size[2]);
+	fprintf(stderr, "\n");
 }
 
 // Displays available platforms and devices
@@ -117,13 +117,12 @@ inline static void display_device_info(cl_platform_id** platforms, cl_uint* plat
 			{
 				fprintf(stderr, "================================================================================\n");
 				fprintf(stderr, "Platform number %d, device number %d (device count: %d):\n\n", i, j, deviceCount);
-				device_info_string(devices[j], CL_DEVICE_VENDOR, "CL_DEVICE_VENDOR");
-				device_info_string(devices[j], CL_DEVICE_NAME, "CL_DEVICE_NAME");
-				device_info_string(devices[j], CL_DEVICE_VERSION, "CL_DEVICE_VERSION");
-				device_info_ulong(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, "CL_DEVICE_GLOBAL_MEM_SIZE");
-				device_info_ulong(devices[j], CL_DEVICE_LOCAL_MEM_SIZE, "CL_DEVICE_LOCAL_MEM_SIZE");
-				device_info_ulong(devices[j], CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, "CL_DEVICE_GLOBAL_MEM_CACHE_SIZE");
-				device_info_device_type(devices[j], CL_DEVICE_TYPE, "CL_DEVICE_TYPE");
+				device_info_string(devices[j]     , CL_DEVICE_VENDOR                   , "VENDOR"                   );
+				device_info_string(devices[j]     , CL_DEVICE_NAME                     , "NAME"                     );
+				device_info_string(devices[j]     , CL_DEVICE_VERSION                  , "VERSION"                  );
+				device_info_ulong(devices[j]      , CL_DEVICE_GLOBAL_MEM_SIZE          , "GLOBAL_MEM_SIZE"          );
+				device_info_ulong(devices[j]      , CL_DEVICE_LOCAL_MEM_SIZE           , "LOCAL_MEM_SIZE"           );
+				device_info_device_type(devices[j], CL_DEVICE_TYPE                     , "TYPE"                     );
 				fprintf(stderr, "================================================================================\n\n");
 			}  
 		}
