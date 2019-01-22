@@ -22,7 +22,7 @@
 #endif
 
 #ifndef WGS
-	#define WGS 64
+	#define WGS 128
 #endif
 
 // global variables
@@ -208,7 +208,8 @@ int main(int argc, char **argv)
 
 	printf("Array size:         %d indexes\n", array_size);
 	printf("Buffer size:        %d MiB\n", size);
-	printf("Total memory usage: %d MiB\n\n", 3 * size);
+	printf("Total memory usage: %d MiB\n", 3 * size);
+	printf("Work-group size:    %d\n\n", WGS);
 
 	// create host buffers
 	if (verbose) printf("Creating host buffers...\n");
