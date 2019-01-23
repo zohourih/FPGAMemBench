@@ -7,11 +7,25 @@ HOST_COMPILER = gcc
 HOST_FLAGS = -O3 -Wall -Wextra -lrt -fopenmp
 
 ifeq ($(INTEL_FPGA),1)
+	AOC_VERSION = $(shell aoc --version | grep Build | cut -c 9-10)
+	LEGACY = $(shell echo $(AOC_VERSION)\<17 | bc)
+
 	INC = $(shell aocl compile-config)
 	LIB = $(shell aocl link-config) -lOpenCL
 	KERNEL_COMPILER = aoc
 	HOST_FLAGS += -DINTEL_FPGA
-	KERNEL_FLAGS = -v --report
+	ifeq ($(LEGACY),1)
+		DASH = --
+		SPACE = $(shell echo " ")
+	else
+		DASH = -
+		SPACE = =
+	endif
+	KERNEL_FLAGS = -v $(DASH)report
+
+	ifeq ($(LEGACY),1)
+		KERNEL_FLAGS += -DLEGACY
+	endif
 
 	ifdef HOST_ONLY
 		KERNEL_BINARY_STD = 
@@ -27,27 +41,27 @@ ifeq ($(INTEL_FPGA),1)
 	endif
 
 	ifdef BOARD
-		KERNEL_FLAGS += --board $(BOARD)
+		KERNEL_FLAGS += $(DASH)board$(SPACE)$(BOARD)
 	endif
 
 	ifdef FMAX
-		KERNEL_FLAGS += --fmax $(FMAX)
+		KERNEL_FLAGS += $(DASH)fmax$(SPACE)$(FMAX)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_fmax$(FMAX)
 	endif
 
 	ifdef SEED
-		KERNEL_FLAGS += --seed $(SEED)
+		KERNEL_FLAGS += $(DASH)seed$(SPACE)$(SEED)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_seed$(SEED)
 	endif
 
 	ifdef NO_INTER
 		HOST_FLAGS += -DNO_INTERLEAVE -Wno-unknown-pragmas
-		KERNEL_FLAGS += --no-interleaving default
+		KERNEL_FLAGS += $(DASH)no-interleaving$(SPACE)default
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_nointer
 	endif
 
 	ifndef CACHE
-		KERNEL_FLAGS += --opt-arg -nocaching
+		KERNEL_FLAGS += $(DASH)opt-arg$(SPACE)-nocaching
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_nocache
 	endif
 else ifeq ($(AMD),1)
