@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 	char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
 	cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
 #else
-	char *kernelSource = read_kernel("fpga-stream-kernel.cl", &kernelFileSize);
+	char *kernelSource = read_kernel("fpga-stream-kernel-std.cl", &kernelFileSize);
 	cl_program prog = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &error);
 #endif
 	if(error != CL_SUCCESS)

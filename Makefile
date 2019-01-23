@@ -14,19 +14,16 @@ ifeq ($(INTEL_FPGA),1)
 	KERNEL_FLAGS = -v --report
 
 	ifdef HOST_ONLY
-		KERNEL_BINARY = 
+		KERNEL_BINARY_STD = 
 	else
-		KERNEL_BINARY = $(KERNEL).aocx
+		KERNEL_BINARY_STD = $(KERNEL)-std.aocx
+		KERNEL_BINARY_CH = $(KERNEL)-ch.aocx
+		KERNEL_BINARY_SERIAL_CH = $(KERNEL)-serial-ch.aocx
 	endif
 
 	ifdef EMULATOR
 		HOST_FLAGS += -DEMULATOR
 		KERNEL_FLAGS += -march=emulator
-	endif
-	
-	ifdef NO_INTER
-		HOST_FLAGS += -DNO_INTERLEAVE
-		KERNEL_FLAGS += --no-interleaving default
 	endif
 
 	ifdef BOARD
@@ -35,19 +32,32 @@ ifeq ($(INTEL_FPGA),1)
 
 	ifdef FMAX
 		KERNEL_FLAGS += --fmax $(FMAX)
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_fmax$(FMAX)
 	endif
 
 	ifdef SEED
 		KERNEL_FLAGS += --seed $(SEED)
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_seed$(SEED)
+	endif
+
+	ifdef NO_INTER
+		HOST_FLAGS += -DNO_INTERLEAVE -Wno-unknown-pragmas
+		KERNEL_FLAGS += --no-interleaving default
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_nointer
+	endif
+
+	ifndef CACHE
+		KERNEL_FLAGS += --opt-arg -nocaching
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_nocache
 	endif
 else ifeq ($(AMD),1)
-	KERNEL_BINARY =
+	KERNEL_BINARY_STD =
 	OPENCL_DIR = $(AMDAPPSDKROOT)
 	INC += -I$(OPENCL_DIR)/include/
 	LIB += -L$(OPENCL_DIR)/lib/x86_64/ -lOpenCL
 	HOST_FLAGS += -Wno-deprecated-declarations
 else ifeq ($(NVIDIA),1)
-	KERNEL_BINARY =
+	KERNEL_BINARY_STD =
 	INC += -I$(CUDA_DIR)/include/
 	LIB += -L$(CUDA_DIR)/lib64/ -lOpenCL
 	HOST_FLAGS += -Wno-deprecated-declarations
@@ -56,6 +66,11 @@ endif
 ifdef NDR
 	HOST_FLAGS += -DNDR
 	KERNEL_FLAGS += -DNDR
+
+	ifdef WGS
+		HOST_FLAGS += -DWGS=$(WGS)
+		KERNEL_FLAGS += -DWGS=$(WGS)
+	endif
 endif
 
 ifdef VEC
@@ -63,21 +78,28 @@ ifdef VEC
 	KERNEL_FLAGS += -DVEC=$(VEC)
 endif
 
-ifdef WGS
-	HOST_FLAGS += -DWGS=$(WGS)
-	KERNEL_FLAGS += -DWGS=$(WGS)
+ifdef NDR
+	KERNEL_CONFIG = NDR_WGS$(WGS)_VEC$(VEC)
+else
+	KERNEL_CONFIG = SWI_VEC$(VEC)
 endif
 
-all: $(HOST_BINARY) $(KERNEL_BINARY)
+std: $(HOST_BINARY) $(KERNEL_BINARY_STD)
+
+ch: $(HOST_BINARY) $(KERNEL_BINARY_CH)
+
+serial_ch: $(HOST_BINARY) $(KERNEL_BINARY_SERIAL_CH)
 
 $(HOST_BINARY): $(HOST_FILE)
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
-	
-$(KERNEL_BINARY): $(KERNEL_FILE)
+
+%.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG).aocx
+%.aocx: %.cl
+	ln -sfn $(KERNEL_BINARY) fpga-stream-kernel.aocx
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(KERNEL_BINARY)
 
 clean:
 	rm -f $(HOST_BINARY)
 	
 clean-kernel:
-	rm -rf $(KERNEL).aocx $(KERNEL).aoco $(KERNEL)
+	rm -rf *.aocx *.aoco rm -rf *.aocx *.aoco *_VEC*
