@@ -17,14 +17,6 @@
 	#include "CL/cl_ext.h"
 #endif
 
-#ifndef VEC
-	#define VEC 1
-#endif
-
-#ifndef WGS
-	#define WGS 128
-#endif
-
 #ifdef LEGACY
 	#define MEM_BANK_1 CL_MEM_BANK_1_ALTERA
 	#define MEM_BANK_2 CL_MEM_BANK_2_ALTERA
@@ -35,7 +27,11 @@
 
 // global variables
 static cl_context       context;
+#ifdef STD
 static cl_command_queue queue;
+#elif CH
+static cl_command_queue queue_read, queue_write;
+#endif
 static cl_device_id*    deviceList;
 static cl_int           deviceCount;
 
@@ -81,13 +77,31 @@ static inline void init()
 	CL_SAFE_CALL( clGetContextInfo(context, CL_CONTEXT_DEVICES, deviceSize, deviceList, NULL) );
 
 	// create command queue for the first device
+#ifdef STD
 	queue = clCreateCommandQueue(context, deviceList[0], 0, NULL);
 	if(!queue)
 	{
-		printf("ERROR: clCreateCommandQueue() failed with error code: ");
+		printf("ERROR: clCreateCommandQueue(queue) failed with error code: ");
 		display_error_message(error, stdout);
 		exit(-1);
 	}
+#elif CH
+	queue_read = clCreateCommandQueue(context, deviceList[0], 0, NULL);
+	if(!queue_read)
+	{
+		printf("ERROR: clCreateCommandQueue(queue_read) failed with error code: ");
+		display_error_message(error, stdout);
+		exit(-1);
+	}
+
+	queue_write = clCreateCommandQueue(context, deviceList[0], 0, NULL);
+	if(!queue_write)
+	{
+		printf("ERROR: clCreateCommandQueue(queue_read) failed with error code: ");
+		display_error_message(error, stdout);
+		exit(-1);
+	}
+#endif
 	
 	free(platforms); // platforms isn't needed in the main function
 }
@@ -95,7 +109,12 @@ static inline void init()
 static inline void shutdown()
 {
 	// release resources
+#ifdef STD
 	if(queue) clReleaseCommandQueue(queue);
+#elif CH
+	if(queue_read) clReleaseCommandQueue(queue_read);
+	if(queue_write) clReleaseCommandQueue(queue_write);
+#endif
 	if(context) clReleaseContext(context);
 	if(deviceList) free(deviceList);
 }
@@ -165,9 +184,14 @@ int main(int argc, char **argv)
 	int array_size = size * 256 * 1024;
 	int padded_array_size = array_size + pad;
 #ifdef NDR
-	// set lcoal and global work size
-	size_t localSize[3] = {(size_t)WGS, 1, 1};
-	size_t globalSize[3] = {(size_t)array_size, 1, 1};
+	// set local and global work size
+	#ifdef STD
+		size_t localSize[3] = {(size_t)WGS, 1, 1};
+		size_t globalSize[3] = {(size_t)array_size, 1, 1};
+	#elif CH
+		size_t localSize[3] = {(size_t)WGS, 1, 1};
+		size_t globalSize[3] = {(size_t)(array_size / VEC), 1, 1};
+	#endif
 #endif
 
 	// OpenCL initialization
@@ -203,7 +227,9 @@ int main(int argc, char **argv)
 	clBuildProgram_SAFE(prog, deviceCount, deviceList, clOptions, NULL, NULL);
 
 	// create kernel objects
+#ifdef STD
 	cl_kernel copyKernel, macKernel;
+
 	copyKernel = clCreateKernel(prog, "copy", &error);
 	if(error != CL_SUCCESS)
 	{
@@ -219,16 +245,56 @@ int main(int argc, char **argv)
 		display_error_message(error, stdout);
 		return -1;
 	}
+#elif CH
+	cl_kernel copyReadKernel, copyWriteKernel, macReadKernel, macWriteKernel;
+
+	copyReadKernel = clCreateKernel(prog, "copy_read", &error);
+	if(error != CL_SUCCESS)
+	{
+		printf("ERROR: clCreateKernel(copy_read) failed with error: ");
+		display_error_message(error, stdout);
+		return -1;
+	}
+
+	copyWriteKernel = clCreateKernel(prog, "copy_write", &error);
+	if(error != CL_SUCCESS)
+	{
+		printf("ERROR: clCreateKernel(copy_write) failed with error: ");
+		display_error_message(error, stdout);
+		return -1;
+	}
+
+	macReadKernel = clCreateKernel(prog, "mac_read", &error);
+	if(error != CL_SUCCESS)
+	{
+		printf("ERROR: clCreateKernel(mac_write) failed with error: ");
+		display_error_message(error, stdout);
+		return -1;
+	}
+
+	macWriteKernel = clCreateKernel(prog, "mac_write", &error);
+	if(error != CL_SUCCESS)
+	{
+		printf("ERROR: clCreateKernel(mac_write) failed with error: ");
+		display_error_message(error, stdout);
+		return -1;
+	}
+#endif
 	clReleaseProgram(prog);
 
+#ifdef STD
+	printf("Kernel type:        standard\n");
+#elif CH
+	printf("Kernel type:        channelized\n");
+#endif
 	printf("Array size:         %d indexes\n", array_size);
 	printf("Buffer size:        %d MiB\n", size);
 	printf("Total memory usage: %d MiB\n", 3 * size);
 #ifdef NDR
 	printf("Work-group size:    %d\n\n", WGS);
-#else
-	printf("Vector size:        %d\n\n", VEC);
 #endif
+	printf("Vector size:        %d\n\n", VEC);
+
 
 	// create host buffers
 	if (verbose) printf("Creating host buffers...\n");
@@ -253,11 +319,11 @@ int main(int argc, char **argv)
 	// create device buffers
 	if (verbose) printf("Creating device buffers...\n");
 #ifdef NO_INTERLEAVE
-	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , padded_array_size * sizeof(float), NULL, &error);
+	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_array_size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_BANK_1_ALTERA , padded_array_size * sizeof(float), NULL, &error);
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_array_size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_BANK_2_ALTERA, padded_array_size * sizeof(float), NULL, &error);
+	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | MEM_BANK_2, padded_array_size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
 #else
 	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_array_size * sizeof(float), NULL, &error);
@@ -270,57 +336,115 @@ int main(int argc, char **argv)
 
 	//write buffers
 	if (verbose) printf("Writing data to device...\n");
+#ifdef STD
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_array_size * sizeof(float), hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_array_size * sizeof(float), hostB, 0, 0, 0));
+#elif CH
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_array_size * sizeof(float), hostA, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceB, 1, 0, padded_array_size * sizeof(float), hostB, 0, 0, 0));
+#endif
 
 	// constValue random float value between 0 and 1 for MAC operation in kernel
 	float constValue = (float)rand() / (float)(RAND_MAX);
 
-#ifdef NDR
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+#ifdef STD
+	#ifdef NDR
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
 
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
-#else
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &array_size) );
-	CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
+	#else
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &array_size) );
 
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &array_size) );
-	CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &array_size) );
+	#endif
+#elif CH
+	#ifdef NDR
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
+	#else
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &array_size) );
+
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &array_size) );
+	#endif
 #endif
-
 	// device warm-up
 	if (verbose) printf("Device warm-up...\n");
-#ifdef NDR
-	CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
-#else
-	CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
+#ifdef STD
+	#ifdef NDR
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+	#else
+		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
+	#endif
+		clFinish(queue);
+#elif CH
+	#ifdef NDR
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+	#else
+		CL_SAFE_CALL( clEnqueueTask(queue_read , copyReadKernel , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_write, copyWriteKernel, 0, NULL, NULL) );
+	#endif
+		clFinish(queue_write);
 #endif
-	clFinish(queue);
 
 	// copy kernel
-	if (verbose) printf("Executing \"Copy\" kernel...\n");
+	if (verify || verbose) printf("Executing \"Copy\" kernel...\n");
 	for (int i = 0; i < iter; i++)
 	{
 		GetTime(start);
 
-#ifdef NDR
+#ifdef STD
+	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
-#else
+	#else
 		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
-#endif
+	#endif
 		clFinish(queue);
+#elif CH
+	#ifdef NDR
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+	#else
+		CL_SAFE_CALL( clEnqueueTask(queue_read , copyReadKernel , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_write, copyWriteKernel, 0, NULL, NULL) );
+	#endif
+		clFinish(queue_write);
+#endif
 
 		GetTime(end);
 		totalCopyTime += TimeDiff(start, end);
@@ -331,8 +455,13 @@ int main(int argc, char **argv)
 	{
 		// read data back to host
 		printf("Reading data back from device...\n");
+	#ifdef STD
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
 		clFinish(queue);
+	#elif CH
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
+		clFinish(queue_write);
+	#endif
 
 		printf("Verifying \"Copy\" kernel: ");
 		int success = 1;
@@ -358,17 +487,28 @@ int main(int argc, char **argv)
 	}
 
 	// MAC kernel
-	if (verbose) printf("Executing \"MAC\" kernel...\n");
+	if (verify || verbose) printf("Executing \"MAC\" kernel...\n");
 	for (int i = 0; i < iter; i++)
 	{
 		GetTime(start);
 
-#ifdef NDR
+#ifdef STD
+	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, macKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
-#else
+	#else
 		CL_SAFE_CALL( clEnqueueTask(queue, macKernel, 0, NULL, NULL) );
-#endif
+	#endif
 		clFinish(queue);
+#elif CH
+	#ifdef NDR
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , macReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, macWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+	#else
+		CL_SAFE_CALL( clEnqueueTask(queue_read , macReadKernel , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_write, macWriteKernel, 0, NULL, NULL) );
+	#endif
+		clFinish(queue_write);
+#endif
 
 		GetTime(end);
 		totalMacTime += TimeDiff(start, end);
@@ -379,8 +519,13 @@ int main(int argc, char **argv)
 	{
 		// read data back to host
 		printf("Reading data back from device...\n");
+	#ifdef STD
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
 		clFinish(queue);
+	#elif CH
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
+		clFinish(queue_write);
+	#endif
 
 		printf("Verifying \"MAC\" kernel: ");
 		int success = 1;

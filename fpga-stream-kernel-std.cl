@@ -1,5 +1,5 @@
 //====================================================================================================================================
-// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs
+// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Standard version
 // Inspired by BabelStream: https://github.com/UoB-HPC/BabelStream/commits/master
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
@@ -25,7 +25,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float * restrict c, const int size, const int pad)
+__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const int size)
 {
 	for (int i = 0; i != size; i += VEC)
 	{
@@ -39,7 +39,7 @@ __kernel void copy(__global const float* restrict a, __global float * restrict c
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int size, const int pad)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int size)
 {
 	for (int i = 0; i != size; i += VEC)
 	{

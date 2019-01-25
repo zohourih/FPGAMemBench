@@ -25,6 +25,7 @@ ifeq ($(INTEL_FPGA),1)
 
 	ifeq ($(LEGACY),1)
 		KERNEL_FLAGS += -DLEGACY
+		HOST_FLAGS += -DLEGACY
 	endif
 
 	ifdef HOST_ONLY
@@ -81,16 +82,14 @@ ifdef NDR
 	HOST_FLAGS += -DNDR
 	KERNEL_FLAGS += -DNDR
 
-	ifdef WGS
-		HOST_FLAGS += -DWGS=$(WGS)
-		KERNEL_FLAGS += -DWGS=$(WGS)
-	endif
+	WGS ?= 64
+	HOST_FLAGS += -DWGS=$(WGS)
+	KERNEL_FLAGS += -DWGS=$(WGS)
 endif
 
-ifdef VEC
-	HOST_FLAGS += -DVEC=$(VEC)
-	KERNEL_FLAGS += -DVEC=$(VEC)
-endif
+VEC ?= 1
+HOST_FLAGS += -DVEC=$(VEC)
+KERNEL_FLAGS += -DVEC=$(VEC)
 
 ifdef NDR
 	KERNEL_CONFIG = NDR_WGS$(WGS)_VEC$(VEC)
@@ -98,8 +97,10 @@ else
 	KERNEL_CONFIG = SWI_VEC$(VEC)
 endif
 
+std: HOST_FLAGS += -DSTD
 std: $(HOST_BINARY) $(KERNEL_BINARY_STD)
 
+ch: HOST_FLAGS += -DCH
 ch: $(HOST_BINARY) $(KERNEL_BINARY_CH)
 
 serial_ch: $(HOST_BINARY) $(KERNEL_BINARY_SERIAL_CH)
