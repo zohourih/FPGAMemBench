@@ -25,6 +25,14 @@
 	#define WGS 128
 #endif
 
+#ifdef LEGACY
+	#define MEM_BANK_1 CL_MEM_BANK_1_ALTERA
+	#define MEM_BANK_2 CL_MEM_BANK_2_ALTERA
+#else
+	#define MEM_BANK_1 CL_MEM_BANK_1_INTEL
+	#define MEM_BANK_2 CL_MEM_BANK_2_INTEL
+#endif
+
 // global variables
 static cl_context       context;
 static cl_command_queue queue;
