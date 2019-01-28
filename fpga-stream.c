@@ -121,7 +121,7 @@ static inline void shutdown()
 
 void usage(char **argv)
 {
-	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> -v (verbose) --verify\n", argv[0]);
+	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> --verbose --verify\n", argv[0]);
 }
 
 int main(int argc, char **argv)
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 			pad = atoi(argv[arg + 1]);
 			arg += 2;
 		}
-		else if (strcmp(argv[arg], "-v") == 0)
+		else if (strcmp(argv[arg], "--verbose") == 0)
 		{
 			verbose = 1;
 			arg += 1;
@@ -291,7 +291,7 @@ int main(int argc, char **argv)
 	printf("Buffer size:        %d MiB\n", size);
 	printf("Total memory usage: %d MiB\n", 3 * size);
 #ifdef NDR
-	printf("Work-group size:    %d\n\n", WGS);
+	printf("Work-group size:    %d\n", WGS);
 #endif
 	printf("Vector size:        %d\n\n", VEC);
 
