@@ -10,16 +10,16 @@ __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
 __kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad)
 {
-	int i = get_global_id(0);
-	c[pad + i] = a[pad + i];
+	int index = get_global_id(0);
+	c[pad + index] = a[pad + index];
 }
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
 __kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad)
 {
-	int i = get_global_id(0);
-	c[pad + i] = constValue * a[pad + i] + b[pad + i];
+	int index = get_global_id(0);
+	c[pad + index] = constValue * a[pad + index] + b[pad + index];
 }
 
 #else // Single Work-item kernels
@@ -32,8 +32,8 @@ __kernel void copy(__global const float* restrict a, __global float * restrict c
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
-			int index = pad + i + j;
-			c[index] = a[index];
+			int index = i + j;
+			c[pad + index] = a[pad + index];
 		}
 	}
 }
@@ -46,8 +46,8 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
-			int index = pad + i + j;
-			c[index] = constValue * a[index] + b[index];
+			int index = i + j;
+			c[pad + index] = constValue * a[pad + index] + b[pad + index];
 		}
 	}
 }

@@ -28,14 +28,14 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void copy_read(__global const float* restrict a, const int pad)
 {
-	int i = get_global_id(0);
-	int index = i * VEC;
+	int tid = get_global_id(0);
+	int i = tid * VEC;
 	CHAN_WIDTH temp;
 
 	#pragma unroll
 	for (int j = 0; j < VEC; j++)
 	{
-		temp.data[j] = a[pad + index + j];
+		temp.data[j] = a[pad + i + j];
 	}
 
 	write_channel(ch_copy, temp);
@@ -44,8 +44,8 @@ __kernel void copy_read(__global const float* restrict a, const int pad)
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void copy_write(__global float * restrict c, const int pad)
 {
-	int i = get_global_id(0);
-	int index = i * VEC;
+	int tid = get_global_id(0);
+	int i = tid * VEC;
 	CHAN_WIDTH temp;
 
 	temp = read_channel(ch_copy);
@@ -53,22 +53,22 @@ __kernel void copy_write(__global float * restrict c, const int pad)
 	#pragma unroll
 	for (int j = 0; j < VEC; j++)
 	{
-		c[pad + index + j] = temp.data[j];
+		c[pad + i + j] = temp.data[j];
 	}
 }
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad)
 {
-	int i = get_global_id(0);
-	int index = i * VEC;
+	int tid = get_global_id(0);
+	int i = tid * VEC;
 	CHAN_WIDTH temp_a, temp_b;
 
 	#pragma unroll
 	for (int j = 0; j < VEC; j++)
 	{
-		temp_a.data[j] = a[pad + index + j];
-		temp_b.data[j] = b[pad + index + j];
+		temp_a.data[j] = a[pad + i + j];
+		temp_b.data[j] = b[pad + i + j];
 	}
 
 	write_channel(ch_mac_a, temp_a);
@@ -78,8 +78,8 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void mac_write(__global float* restrict c, const float constValue, const int pad)
 {
-	int i = get_global_id(0);
-	int index = i * VEC;
+	int tid = get_global_id(0);
+	int i = tid * VEC;
 	CHAN_WIDTH temp_a, temp_b;
 
 	temp_a = read_channel(ch_mac_a);
@@ -88,7 +88,7 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 	#pragma unroll
 	for (int j = 0; j < VEC; j++)
 	{
-		c[pad + index + j] = constValue * temp_a.data[j] + temp_b.data[j];
+		c[pad + i + j] = constValue * temp_a.data[j] + temp_b.data[j];
 	}
 }
 
