@@ -283,9 +283,14 @@ int main(int argc, char **argv)
 	clReleaseProgram(prog);
 
 #ifdef STD
-	printf("Kernel type:        standard\n");
+	printf("Kernel type:        Standard\n");
 #elif CH
-	printf("Kernel type:        channelized\n");
+	printf("Kernel type:        Channelized\n");
+#endif
+#ifdef NDR
+	printf("Kernel model:       NDRange\n");
+#else
+	printf("Kernel model:       Single Work-item\n");
 #endif
 	printf("Array size:         %d indexes\n", array_size);
 	printf("Buffer size:        %d MiB\n", size);
@@ -465,12 +470,12 @@ int main(int argc, char **argv)
 
 		printf("Verifying \"Copy\" kernel: ");
 		int success = 1;
-		#pragma omp parallel for ordered default(none) firstprivate(array_size, pad, hostA, hostC) shared(success)
+		#pragma omp parallel for ordered default(none) firstprivate(array_size, pad, hostA, hostC, verbose) shared(success)
 		for (int i = 0; i < array_size; i++)
 		{
 			if (hostA[pad + i] != hostC[pad + i])
 			{
-				printf("Mismatch at index %d: Expected = %0.6f, Obtained = %0.6f\n", i, hostA[pad + i], hostC[pad + i]);
+				if (verbose) printf("Mismatch at index %d: Expected = %0.6f, Obtained = %0.6f\n", i, hostA[pad + i], hostC[pad + i]);
 				success = 0;
 			}
 		}
