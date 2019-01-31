@@ -50,6 +50,17 @@ ifeq ($(INTEL_FPGA),1)
 		KERNEL_FLAGS += $(DASH)board$(SPACE)$(BOARD)
 	endif
 
+	ifeq ($(NO_INTER),1)
+		HOST_FLAGS += -DNO_INTERLEAVE -Wno-unknown-pragmas
+		KERNEL_FLAGS += $(DASH)no-interleaving$(SPACE)default
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_nointer
+	endif
+
+	ifeq ($(NO_CACHE),1)
+		KERNEL_FLAGS += $(DASH)opt-arg$(SPACE)-nocaching
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_nocache
+	endif
+
 	ifdef FMAX
 		KERNEL_FLAGS += $(DASH)fmax$(SPACE)$(FMAX)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_fmax$(FMAX)
@@ -60,15 +71,8 @@ ifeq ($(INTEL_FPGA),1)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_seed$(SEED)
 	endif
 
-	ifeq ($(NO_INTER),1)
-		HOST_FLAGS += -DNO_INTERLEAVE -Wno-unknown-pragmas
-		KERNEL_FLAGS += $(DASH)no-interleaving$(SPACE)default
-		EXTRA_CONFIG := $(EXTRA_CONFIG)_nointer
-	endif
-
-	ifeq ($(CACHE),1)
-		KERNEL_FLAGS += $(DASH)opt-arg$(SPACE)-nocaching
-		EXTRA_CONFIG := $(EXTRA_CONFIG)_nocache
+	ifdef FOLDER
+		FOLDER=$(FOLDER)
 	endif
 else ifeq ($(AMD),1)
 	KERNEL_BINARY_STD =
@@ -116,8 +120,8 @@ fpga-stream: $(HOST_FILE)
 
 %.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG).aocx
 %.aocx: %.cl
-	ln -sfn $(KERNEL_BINARY) fpga-stream-kernel.aocx
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(KERNEL_BINARY)
+	ln -sfn $(FOLDER)/$(KERNEL_BINARY) fpga-stream-kernel.aocx
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(FOLDER)/$(KERNEL_BINARY)
 
 clean:
 	rm -f $(HOST_BINARY)
