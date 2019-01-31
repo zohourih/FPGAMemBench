@@ -37,6 +37,10 @@ ifeq ($(INTEL_FPGA),1)
 		KERNEL_BINARY_SCH_M = $(KERNEL)-sch-m.aocx
 	endif
 
+	ifdef KERNEL_ONLY
+		HOST_BINARY = 
+	endif
+
 	ifdef EMULATOR
 		HOST_FLAGS += -DEMULATOR
 		KERNEL_FLAGS += -march=emulator
@@ -107,7 +111,7 @@ ch: $(HOST_BINARY) $(KERNEL_BINARY_CH)
 sch: HOST_FLAGS += -DSCH
 sch: $(HOST_BINARY) $(KERNEL_BINARY_SCH_C) $(KERNEL_BINARY_SCH_M)
 
-$(HOST_BINARY): $(HOST_FILE)
+fpga-stream: $(HOST_FILE)
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
 
 %.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG).aocx
