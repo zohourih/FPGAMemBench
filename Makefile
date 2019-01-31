@@ -60,13 +60,13 @@ ifeq ($(INTEL_FPGA),1)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_seed$(SEED)
 	endif
 
-	ifdef NO_INTER
+	ifeq ($(NO_INTER),1)
 		HOST_FLAGS += -DNO_INTERLEAVE -Wno-unknown-pragmas
 		KERNEL_FLAGS += $(DASH)no-interleaving$(SPACE)default
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_nointer
 	endif
 
-	ifndef CACHE
+	ifeq ($(CACHE),1)
 		KERNEL_FLAGS += $(DASH)opt-arg$(SPACE)-nocaching
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_nocache
 	endif
@@ -83,7 +83,7 @@ else ifeq ($(NVIDIA),1)
 	HOST_FLAGS += -Wno-deprecated-declarations
 endif
 
-ifdef NDR
+ifeq ($(NDR),1)
 	HOST_FLAGS += -DNDR
 	KERNEL_FLAGS += -DNDR
 
@@ -96,7 +96,7 @@ VEC ?= 1
 HOST_FLAGS += -DVEC=$(VEC)
 KERNEL_FLAGS += -DVEC=$(VEC)
 
-ifdef NDR
+ifeq ($(NDR),1)
 	KERNEL_CONFIG = NDR_WGS$(WGS)_VEC$(VEC)
 else
 	KERNEL_CONFIG = SWI_VEC$(VEC)
