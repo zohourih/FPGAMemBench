@@ -21,8 +21,8 @@
 	#define MEM_BANK_1 CL_MEM_BANK_1_ALTERA
 	#define MEM_BANK_2 CL_MEM_BANK_2_ALTERA
 #else
-	#define MEM_BANK_1 CL_MEM_BANK_1_INTEL
-	#define MEM_BANK_2 CL_MEM_BANK_2_INTEL
+	#define MEM_BANK_1 CL_CHANNEL_1_INTELFPGA
+	#define MEM_BANK_2 CL_CHANNEL_2_INTELFPGA
 #endif
 
 // global variables
