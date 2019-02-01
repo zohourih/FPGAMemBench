@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 #ifdef NO_INTERLEAVE
 	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_array_size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_array_size * sizeof(float), NULL, &error);
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_2, padded_array_size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
 	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | MEM_BANK_2, padded_array_size * sizeof(float), NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
