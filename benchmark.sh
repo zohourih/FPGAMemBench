@@ -2,9 +2,19 @@
 
 export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
-iter=2
+iter=5
 size=1024
 folder=de5net
+verify=""
+pad_end=1
+if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]]
+then
+	verify="--verify"
+fi
+if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]]
+then
+	pad_end=32
+fi
 
 echo "Type" | xargs printf "%-8s"
 echo "Model" | xargs printf "%-8s"
@@ -12,6 +22,7 @@ echo "Cache" | xargs printf "%-8s"
 echo "Interleave" | xargs printf "%-12s"
 echo "Vector" | xargs printf "%-8s"
 echo "Frequency" | xargs printf "%-12s"
+echo "Padding" | xargs printf "%-10s"
 echo "Copy\ (GiB/s)" | xargs printf "%-15s"
 echo "MAC\ (GiB/s)" | xargs printf "%-15s"
 echo
@@ -32,16 +43,16 @@ do
 	if [[ -n `echo $name | grep nointer` ]]
 	then
 		nointer=1
-		inter=NO
+		inter=N
 	else
 		nointer=0
-		inter=YES
+		inter=Y
 	fi
 	if [[ -n `echo $name | grep nocache` ]]
 	then
-		cache=NO
+		cache=N
 	else
-		cache=YES
+		cache=Y
 	fi
 	freq=`cat $folder/$name/acl_quartus_report.txt | grep Actual | cut -d " " -f 4 | xargs printf %0.2f`
 
@@ -50,20 +61,32 @@ do
 	ln -s "$folder/$i" fpga-stream-kernel.aocx
 	aocl program acl0 fpga-stream-kernel.aocx >/dev/null 2>&1
 
-	out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter 2>&1`
-	#echo "$out" >> ast.txt
-	copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
-	mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
+	for ((pad = 0 ; pad < $pad_end ; pad++))
+	do
+		out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter $verify 2>&1`
+		#echo "$out" >> ast.txt
+		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
+		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
+		copy_ver=`echo "$out" | grep Verify | grep Copy | cut -d " " -f 4 | cut -c 1-1`
+		mac_ver=`echo "$out" | grep Verify | grep MAC | cut -d " " -f 4 | cut -c 1-1`
 
-	echo $type | xargs printf "%-8s"
-	echo $model | xargs printf "%-8s"
-	echo $cache | xargs printf "%-8s"
-	echo $inter | xargs printf "%-12s"
-	echo $VEC | xargs printf "%-8s"
-	echo $freq | xargs printf "%-12s"
-	echo $copy | xargs printf "%-15s"
-	echo $mac | xargs printf "%-15s"
-	echo
+		echo $type | xargs printf "%-8s"
+		echo $model | xargs printf "%-8s"
+		echo $cache | xargs printf "%-8s"
+		echo $inter | xargs printf "%-12s"
+		echo $VEC | xargs printf "%-8s"
+		echo $freq | xargs printf "%-12s"
+		echo $pad | xargs printf "%-10s"
+		if [[ "$1" == "--verify" ]]
+		then
+			echo "$copy\ ($copy_ver)" | xargs printf "%-15s"
+			echo "$mac\ ($mac_ver)" | xargs printf "%-15s"
+		else
+			echo $copy | xargs printf "%-15s"
+			echo $mac | xargs printf "%-15s"
+		fi
+		echo
+	done
 done
 
 unset CL_CONTEXT_COMPILER_MODE_ALTERA
