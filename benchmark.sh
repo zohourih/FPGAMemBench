@@ -4,7 +4,9 @@ export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
 iter=5
 size=768
-folder=de5net
+board=de5net
+version="16.1.2"
+folder=`echo "$board"_"$version"`
 verify=""
 pad_end=0
 if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]]
