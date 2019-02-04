@@ -3,7 +3,7 @@
 export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
 iter=5
-size=1024
+size=768
 folder=de5net
 verify=""
 pad_end=1
