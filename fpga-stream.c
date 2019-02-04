@@ -106,20 +106,7 @@ static inline void init()
 	free(platforms); // platforms isn't needed in the main function
 }
 
-static inline void shutdown()
-{
-	// release resources
-#ifdef STD
-	if(queue) clReleaseCommandQueue(queue);
-#elif CH
-	if(queue_read) clReleaseCommandQueue(queue_read);
-	if(queue_write) clReleaseCommandQueue(queue_write);
-#endif
-	if(context) clReleaseContext(context);
-	if(deviceList) free(deviceList);
-}
-
-void usage(char **argv)
+static inline void usage(char **argv)
 {
 	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> --verbose --verify\n", argv[0]);
 }
@@ -127,7 +114,7 @@ void usage(char **argv)
 int main(int argc, char **argv)
 {
 	// input arguments
-	int size = 100; 								// buffer size, default size is 100 MiB
+	int size_MiB = 100; 							// buffer size, default size is 100 MiB
 	int iter = 1;									// number of iterations
 	int pad = 0;									// padding
 	int verbose = 0, verify = 0;
@@ -144,7 +131,7 @@ int main(int argc, char **argv)
 	{
 		if(strcmp(argv[arg], "-s") == 0)
 		{
-			size = atoi(argv[arg + 1]);
+			size_MiB = atoi(argv[arg + 1]);
 			arg += 2;
 		}
 		else if (strcmp(argv[arg], "-n") == 0)
@@ -181,8 +168,11 @@ int main(int argc, char **argv)
 	}
 
 	// set array size based in input buffer size, default is 256k floats (= 100 MiB)
-	int array_size = size * 256 * 1024;
-	int padded_array_size = array_size + pad;
+	long size_B = size_MiB * 1024 * 1024;
+	long array_size = size_B / sizeof(float);
+	long padded_array_size = array_size + pad;
+	long padded_size_B = padded_array_size * sizeof(float);
+	int padded_size_MiB = padded_size_B / (1024 * 1024);
 #ifdef NDR
 	// set local and global work size
 	#ifdef STD
@@ -292,9 +282,9 @@ int main(int argc, char **argv)
 #else
 	printf("Kernel model:       Single Work-item\n");
 #endif
-	printf("Array size:         %d indexes\n", array_size);
-	printf("Buffer size:        %d MiB\n", size);
-	printf("Total memory usage: %d MiB\n", 3 * size);
+	printf("Array size:         %ld indexes\n", array_size);
+	printf("Buffer size:        %d MiB\n", size_MiB);
+	printf("Total memory usage: %d MiB\n", 3 * size_MiB);
 #ifdef NDR
 	printf("Work-group size:    %d\n", WGS);
 #endif
@@ -303,9 +293,9 @@ int main(int argc, char **argv)
 
 	// create host buffers
 	if (verbose) printf("Creating host buffers...\n");
-	float* hostA = alignedMalloc(padded_array_size * sizeof(float));
-	float* hostB = alignedMalloc(padded_array_size * sizeof(float));
-	float* hostC = alignedMalloc(padded_array_size * sizeof(float));
+	float* hostA = alignedMalloc(padded_size_B);
+	float* hostB = alignedMalloc(padded_size_B);
+	float* hostC = alignedMalloc(padded_size_B);
 
 	// populate host buffers
 	if (verbose) printf("Filling host buffers with random data...\n");
@@ -324,29 +314,29 @@ int main(int argc, char **argv)
 	// create device buffers
 	if (verbose) printf("Creating device buffers...\n");
 #ifdef NO_INTERLEAVE
-	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_array_size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_2, padded_array_size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | MEM_BANK_2, padded_array_size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_size_B, NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_2, padded_size_B, NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
+	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | MEM_BANK_2, padded_size_B, NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
 #else
-	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_array_size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_array_size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
-	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, padded_array_size * sizeof(float), NULL, &error);
-	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", size); display_error_message(error, stdout); return -1;}
+	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_size_B, NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_size_B, NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
+	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, padded_size_B, NULL, &error);
+	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
 #endif
 
 	//write buffers
 	if (verbose) printf("Writing data to device...\n");
 #ifdef STD
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_array_size * sizeof(float), hostA, 0, 0, 0));
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_array_size * sizeof(float), hostB, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_size_B, hostA, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_size_B, hostB, 0, 0, 0));
 #elif CH
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_array_size * sizeof(float), hostA, 0, 0, 0));
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceB, 1, 0, padded_array_size * sizeof(float), hostB, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_size_B, hostA, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceB, 1, 0, padded_size_B, hostB, 0, 0, 0));
 #endif
 
 	// constValue random float value between 0 and 1 for MAC operation in kernel
@@ -461,10 +451,10 @@ int main(int argc, char **argv)
 		// read data back to host
 		printf("Reading data back from device...\n");
 	#ifdef STD
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
 		clFinish(queue);
 	#elif CH
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
 
@@ -525,10 +515,10 @@ int main(int argc, char **argv)
 		// read data back to host
 		printf("Reading data back from device...\n");
 	#ifdef STD
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
 		clFinish(queue);
 	#elif CH
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_array_size * sizeof(float), hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
 
@@ -558,12 +548,16 @@ int main(int argc, char **argv)
 	if (verify || verbose) printf("\n");
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * array_size * sizeof(float)) / (1.0E6 * avgCopyTime));
-	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * size * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * array_size * sizeof(float)) / (1.0E6 * avgMacTime ));
+	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * size_B) / (1.0E6 * avgCopyTime));
+	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * size_MiB * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * size_B) / (1.0E6 * avgMacTime ));
 
-	// OpenCL shutdown
-	shutdown();
-
+#ifdef STD
+	clReleaseCommandQueue(queue);
+#elif CH
+	clReleaseCommandQueue(queue_read);
+	clReleaseCommandQueue(queue_write);
+#endif
+	clReleaseContext(context);
 	clReleaseMemObject(deviceA);
 	clReleaseMemObject(deviceB);
 	clReleaseMemObject(deviceC);
@@ -572,4 +566,5 @@ int main(int argc, char **argv)
 	free(hostB);
 	free(hostC);
 	free(kernelSource);
+	free(deviceList);
 }
