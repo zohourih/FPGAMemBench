@@ -63,7 +63,7 @@ do
 
 	for ((pad = 0 ; pad < $pad_end ; pad++))
 	do
-		out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter $verify 2>&1`
+		out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter -p $pad $verify 2>&1`
 		#echo "$out" >> ast.txt
 		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
 		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
