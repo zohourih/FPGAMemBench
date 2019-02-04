@@ -77,7 +77,7 @@ do
 		echo $VEC | xargs printf "%-8s"
 		echo $freq | xargs printf "%-12s"
 		echo $pad | xargs printf "%-10s"
-		if [[ "$1" == "--verify" ]]
+		if [[ "$verify" == "--verify" ]]
 		then
 			echo "$copy\ ($copy_ver)" | xargs printf "%-15s"
 			echo "$mac\ ($mac_ver)" | xargs printf "%-15s"
