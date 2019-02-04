@@ -6,14 +6,14 @@ iter=5
 size=768
 folder=de5net
 verify=""
-pad_end=1
+pad_end=0
 if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]]
 then
 	verify="--verify"
 fi
 if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]]
 then
-	pad_end=32
+	pad_end=16
 fi
 
 echo "Type" | xargs printf "%-8s"
@@ -61,7 +61,7 @@ do
 	ln -s "$folder/$i" fpga-stream-kernel.aocx
 	aocl program acl0 fpga-stream-kernel.aocx >/dev/null 2>&1
 
-	for ((pad = 0 ; pad < $pad_end ; pad++))
+	for ((pad = 0 ; pad <= $pad_end ; pad++))
 	do
 		out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter -p $pad $verify 2>&1`
 		#echo "$out" >> ast.txt
