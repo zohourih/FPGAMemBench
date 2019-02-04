@@ -558,8 +558,8 @@ int main(int argc, char **argv)
 	if (verify || verbose) printf("\n");
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	printf("Copy: %.2f GiB/s (%.2f GB/s)\n", (double)(2 * size * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * array_size * sizeof(float)) / (1.0E6 * avgCopyTime));
-	printf("MAC : %.2f GiB/s (%.2f GB/s)\n", (double)(3 * size * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * array_size * sizeof(float)) / (1.0E6 * avgMacTime ));
+	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * array_size * sizeof(float)) / (1.0E6 * avgCopyTime));
+	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * size * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * array_size * sizeof(float)) / (1.0E6 * avgMacTime ));
 
 	// OpenCL shutdown
 	shutdown();
