@@ -32,7 +32,7 @@ echo
 for i in `ls $folder | grep aocx | sort -V`
 do
 	name="${i%.*}"
-	type=`echo $name | cut -d "-" -f 4 | cut -d "_" -f 1 | tr '[:lower:]' '[:upper:]'`
+	type=`echo $name | cut -d "-" -f 4 | cut -d "_" -f 1`
 	if [[ `echo $name | cut -d "_" -f 2` == NDR ]]
 	then
 		ndr=1
@@ -58,7 +58,7 @@ do
 	fi
 	freq=`cat $folder/$name/acl_quartus_report.txt | grep Actual | cut -d " " -f 4 | xargs printf %0.2f`
 
-	make clean >/dev/null 2>&1; make INTEL_FPGA=1 HOST_ONLY=1 VEC=$VEC NO_INTER=$nointer NDR=$ndr >/dev/null 2>&1
+	make clean >/dev/null 2>&1; make $type INTEL_FPGA=1 HOST_ONLY=1 VEC=$VEC NO_INTER=$nointer NDR=$ndr >/dev/null 2>&1
 	rm fpga-stream-kernel.aocx >/dev/null 2>&1
 	ln -s "$folder/$i" fpga-stream-kernel.aocx
 	aocl program acl0 fpga-stream-kernel.aocx >/dev/null 2>&1
@@ -72,7 +72,7 @@ do
 		copy_ver=`echo "$out" | grep Verify | grep Copy | cut -d " " -f 4 | cut -c 1-1`
 		mac_ver=`echo "$out" | grep Verify | grep MAC | cut -d " " -f 4 | cut -c 1-1`
 
-		echo $type | xargs printf "%-8s"
+		echo $type  | tr '[:lower:]' '[:upper:]' | xargs printf "%-8s"
 		echo $model | xargs printf "%-8s"
 		echo $cache | xargs printf "%-8s"
 		echo $inter | xargs printf "%-12s"
