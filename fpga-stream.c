@@ -27,7 +27,7 @@
 
 // global variables
 static cl_context       context;
-#ifdef STD
+#if defined(STD) || defined(BLK)
 static cl_command_queue queue;
 #elif CH
 static cl_command_queue queue_read, queue_write;
@@ -77,7 +77,7 @@ static inline void init()
 	CL_SAFE_CALL( clGetContextInfo(context, CL_CONTEXT_DEVICES, deviceSize, deviceList, NULL) );
 
 	// create command queue for the first device
-#ifdef STD
+#if defined(STD) || defined(BLK)
 	queue = clCreateCommandQueue(context, deviceList[0], 0, NULL);
 	if(!queue)
 	{
@@ -118,6 +118,9 @@ int main(int argc, char **argv)
 	int iter = 1;									// number of iterations
 	int pad = 0;									// padding
 	int verbose = 0, verify = 0;
+#ifdef BLK
+	int overlap = 4;								// blocks are overlapped by double of this amount
+#endif
 
 	// timing measurement
 	TimeStamp start, end;
@@ -144,6 +147,13 @@ int main(int argc, char **argv)
 			pad = atoi(argv[arg + 1]);
 			arg += 2;
 		}
+	#ifdef BLK
+		else if (strcmp(argv[arg], "-o") == 0)
+		{
+			overlap = atoi(argv[arg + 1]);
+			arg += 2;
+		}
+	#endif
 		else if (strcmp(argv[arg], "--verbose") == 0)
 		{
 			verbose = 1;
@@ -172,7 +182,7 @@ int main(int argc, char **argv)
 	long array_size = size_B / sizeof(float);
 	long padded_array_size = array_size + pad;
 	long padded_size_B = padded_array_size * sizeof(float);
-	int padded_size_MiB = padded_size_B / (1024 * 1024);
+	int  padded_size_MiB = padded_size_B / (1024 * 1024);
 #ifdef NDR
 	// set local and global work size
 	#ifdef STD
@@ -181,6 +191,14 @@ int main(int argc, char **argv)
 	#elif CH
 		size_t localSize[3] = {(size_t)WGS, 1, 1};
 		size_t globalSize[3] = {(size_t)(array_size / VEC), 1, 1};
+	#elif BLK
+		int valid_blk  = BSIZE - 2 * overlap;
+		int exit_index = (array_size % valid_blk == 0) ? array_size : array_size + valid_blk - array_size % valid_blk;
+		int num_blk = exit_index / valid_blk;
+		int total_index  = BSIZE * num_blk;
+
+		size_t localSize[3] = {(size_t)BSIZE, 1, 1};
+		size_t globalSize[3] = {(size_t)total_index, 1, 1};
 	#endif
 #endif
 
@@ -217,7 +235,7 @@ int main(int argc, char **argv)
 	clBuildProgram_SAFE(prog, deviceCount, deviceList, clOptions, NULL, NULL);
 
 	// create kernel objects
-#ifdef STD
+#if defined(STD) || defined(BLK)
 	cl_kernel copyKernel, macKernel;
 
 	copyKernel = clCreateKernel(prog, "copy", &error);
@@ -276,6 +294,8 @@ int main(int argc, char **argv)
 	printf("Kernel type:        Standard\n");
 #elif CH
 	printf("Kernel type:        Channelized\n");
+#elif BLK
+	printf("Kernel type:        Overlapped blocking\n");
 #endif
 #ifdef NDR
 	printf("Kernel model:       NDRange\n");
@@ -331,7 +351,7 @@ int main(int argc, char **argv)
 
 	//write buffers
 	if (verbose) printf("Writing data to device...\n");
-#ifdef STD
+#if defined(STD) || defined(BLK)
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_size_B, hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_size_B, hostB, 0, 0, 0));
 #elif CH
@@ -396,10 +416,47 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &array_size) );
 	#endif
+#elif BLK
+	#ifdef NDR
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4, sizeof(cl_int  ), (void*) &overlap   ) );
+
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &overlap   ) );
+	#else
+		int valid_blk  = BSIZE - 2 * overlap;
+		int exit_index = (array_size % valid_blk == 0) ? array_size : array_size + valid_blk - array_size % valid_blk;
+		int num_blk = exit_index / valid_blk;
+		int loop_exit  = BSIZE * num_blk / VEC;
+
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 5, sizeof(cl_int  ), (void*) &overlap   ) );
+
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &overlap   ) );
+	#endif
 #endif
 	// device warm-up
 	if (verbose) printf("Device warm-up...\n");
-#ifdef STD
+#if defined(STD) || defined(BLK)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
@@ -423,7 +480,7 @@ int main(int argc, char **argv)
 	{
 		GetTime(start);
 
-#ifdef STD
+#if defined(STD) || defined(BLK)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
@@ -450,7 +507,7 @@ int main(int argc, char **argv)
 	{
 		// read data back to host
 		printf("Reading data back from device...\n");
-	#ifdef STD
+	#if defined(STD) || defined(BLK)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
 		clFinish(queue);
 	#elif CH
@@ -487,7 +544,7 @@ int main(int argc, char **argv)
 	{
 		GetTime(start);
 
-#ifdef STD
+#if defined(STD) || defined(BLK)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, macKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
@@ -514,7 +571,7 @@ int main(int argc, char **argv)
 	{
 		// read data back to host
 		printf("Reading data back from device...\n");
-	#ifdef STD
+	#if defined(STD) || defined(BLK)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
 		clFinish(queue);
 	#elif CH
@@ -551,7 +608,7 @@ int main(int argc, char **argv)
 	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * size_B) / (1.0E6 * avgCopyTime));
 	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * size_MiB * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * size_B) / (1.0E6 * avgMacTime ));
 
-#ifdef STD
+#if defined(STD) || defined(BLK)
 	clReleaseCommandQueue(queue);
 #elif CH
 	clReleaseCommandQueue(queue_read);

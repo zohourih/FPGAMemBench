@@ -33,6 +33,7 @@ ifeq ($(INTEL_FPGA),1)
 	else
 		KERNEL_BINARY_STD = $(KERNEL)-std.aocx
 		KERNEL_BINARY_CH = $(KERNEL)-ch.aocx
+		KERNEL_BINARY_BLK = $(KERNEL)-blk.aocx
 		KERNEL_BINARY_SCH_C = $(KERNEL)-sch-c.aocx
 		KERNEL_BINARY_SCH_M = $(KERNEL)-sch-m.aocx
 	endif
@@ -73,6 +74,8 @@ ifeq ($(INTEL_FPGA),1)
 
 	ifdef FOLDER
 		FOLDER=$(FOLDER)
+	else
+		FOLDER=.
 	endif
 else ifeq ($(AMD),1)
 	KERNEL_BINARY_STD =
@@ -87,6 +90,10 @@ else ifeq ($(NVIDIA),1)
 	HOST_FLAGS += -Wno-deprecated-declarations
 endif
 
+VEC ?= 1
+HOST_FLAGS += -DVEC=$(VEC)
+KERNEL_FLAGS += -DVEC=$(VEC)
+
 ifeq ($(NDR),1)
 	HOST_FLAGS += -DNDR
 	KERNEL_FLAGS += -DNDR
@@ -94,23 +101,24 @@ ifeq ($(NDR),1)
 	WGS ?= 64
 	HOST_FLAGS += -DWGS=$(WGS)
 	KERNEL_FLAGS += -DWGS=$(WGS)
-endif
-
-VEC ?= 1
-HOST_FLAGS += -DVEC=$(VEC)
-KERNEL_FLAGS += -DVEC=$(VEC)
-
-ifeq ($(NDR),1)
+	
 	KERNEL_CONFIG = NDR_VEC$(VEC)
 else
 	KERNEL_CONFIG = SWI_VEC$(VEC)
 endif
+
+BSIZE ?= 1024
+HOST_FLAGS += -DBSIZE=$(BSIZE)
+KERNEL_FLAGS += -DBSIZE=$(BSIZE)
 
 std: HOST_FLAGS += -DSTD
 std: $(HOST_BINARY) $(KERNEL_BINARY_STD)
 
 ch: HOST_FLAGS += -DCH
 ch: $(HOST_BINARY) $(KERNEL_BINARY_CH)
+
+blk: HOST_FLAGS += -DBLK
+blk: $(HOST_BINARY) $(KERNEL_BINARY_BLK)
 
 sch: HOST_FLAGS += -DSCH
 sch: $(HOST_BINARY) $(KERNEL_BINARY_SCH_C) $(KERNEL_BINARY_SCH_M)
