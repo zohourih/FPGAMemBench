@@ -9,6 +9,8 @@ version=`aoc --version | grep Build | cut -d " " -f 2`
 folder=`echo "$board"_"$version"`
 verify=""
 pad_end=0
+overlap=4
+overlap_switch=""
 if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]]
 then
 	verify="--verify"
@@ -33,6 +35,10 @@ for i in `ls $folder | grep aocx | sort -V`
 do
 	name="${i%.*}"
 	type=`echo $name | cut -d "-" -f 4 | cut -d "_" -f 1`
+	if [[ "$type" == "blk" ]]
+	then
+		overlap_switch="-o $overlap"
+	fi
 	if [[ `echo $name | cut -d "_" -f 2` == NDR ]]
 	then
 		ndr=1
@@ -65,7 +71,7 @@ do
 
 	for ((pad = 0 ; pad <= $pad_end ; pad++))
 	do
-		out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter -p $pad $verify 2>&1`
+		out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter -p $pad $overlap_switch $verify 2>&1`
 		#echo "$out" >> ast.txt
 		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
 		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
