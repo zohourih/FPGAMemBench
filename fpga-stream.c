@@ -306,7 +306,11 @@ int main(int argc, char **argv)
 	printf("Buffer size:        %d MiB\n", size_MiB);
 	printf("Total memory usage: %d MiB\n", 3 * size_MiB);
 #ifdef NDR
+	#ifdef BLK
+	printf("Work-group size:    %d\n", BSIZE);
+	#else
 	printf("Work-group size:    %d\n", WGS);
+	#endif
 #endif
 	printf("Vector size:        %d\n", VEC);
 #if BLK
