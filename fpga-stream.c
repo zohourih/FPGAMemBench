@@ -308,7 +308,13 @@ int main(int argc, char **argv)
 #ifdef NDR
 	printf("Work-group size:    %d\n", WGS);
 #endif
-	printf("Vector size:        %d\n\n", VEC);
+	printf("Vector size:        %d\n", VEC);
+#if BLK
+	printf("Padding:            %d\n", pad);
+	printf("Overlap:            %d\n\n", overlap);
+#else
+	printf("Padding:            %d\n\n", pad);
+#endif
 
 
 	// create host buffers
