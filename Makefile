@@ -2,7 +2,6 @@ NAME = fpga-stream
 HOST_FILE = $(NAME).c
 HOST_BINARY = $(NAME)
 KERNEL = $(NAME)-kernel
-KERNEL_FILE = $(KERNEL).cl
 HOST_COMPILER = gcc
 HOST_FLAGS = -O3 -Wall -Wextra -lrt -fopenmp
 
@@ -34,8 +33,7 @@ ifeq ($(INTEL_FPGA),1)
 		KERNEL_BINARY_STD = $(KERNEL)-std.aocx
 		KERNEL_BINARY_CH = $(KERNEL)-ch.aocx
 		KERNEL_BINARY_BLK = $(KERNEL)-blk.aocx
-		KERNEL_BINARY_SCH_C = $(KERNEL)-sch-c.aocx
-		KERNEL_BINARY_SCH_M = $(KERNEL)-sch-m.aocx
+		KERNEL_BINARY_SCH = $(shell echo "fpga_1 fpga_2")
 	endif
 
 	ifdef KERNEL_ONLY
@@ -108,8 +106,6 @@ else
 endif
 
 BSIZE ?= 1024
-HOST_FLAGS += -DBSIZE=$(BSIZE)
-KERNEL_FLAGS += -DBSIZE=$(BSIZE)
 
 std: HOST_FLAGS += -DSTD
 std: $(HOST_BINARY) $(KERNEL_BINARY_STD)
@@ -117,22 +113,35 @@ std: $(HOST_BINARY) $(KERNEL_BINARY_STD)
 ch: HOST_FLAGS += -DCH
 ch: $(HOST_BINARY) $(KERNEL_BINARY_CH)
 
-blk: HOST_FLAGS += -DBLK
+blk: HOST_FLAGS += -DBLK -DBSIZE=$(BSIZE)
+blk: KERNEL_FLAGS += -DBSIZE=$(BSIZE)
 blk: $(HOST_BINARY) $(KERNEL_BINARY_BLK)
 
 sch: HOST_FLAGS += -DSCH
-sch: $(HOST_BINARY) $(KERNEL_BINARY_SCH_C) $(KERNEL_BINARY_SCH_M)
+sch: $(HOST_BINARY) $(KERNEL_BINARY_SCH)
 
 fpga-stream: $(HOST_FILE)
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
 
 %.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG).aocx
 %.aocx: %.cl
-	ln -sfn $(FOLDER)/$(KERNEL_BINARY) fpga-stream-kernel.aocx
+	ln -sfn $(FOLDER)/$(KERNEL_BINARY) $(KERNEL).aocx
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(FOLDER)/$(KERNEL_BINARY)
+
+fpga_1: KERNEL_FLAGS += -DFPGA_1
+fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1.aocx
+fpga_1: $(KERNEL)-sch.cl
+	ln -sfn $(FOLDER)/$(KERNEL_BINARY) $(KERNEL)_FPGA_1.aocx
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(FOLDER)/$(KERNEL_BINARY)
+
+fpga_2: KERNEL_FLAGS += -DFPGA_2
+fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2.aocx
+fpga_2: $(KERNEL)-sch.cl
+	ln -sfn $(FOLDER)/$(KERNEL_BINARY) $(KERNEL)_FPGA_2.aocx
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(FOLDER)/$(KERNEL_BINARY)
 
 clean:
 	rm -f $(HOST_BINARY)
 	
 clean-kernel:
-	rm -rf *.aocx *.aoco rm -rf *.aocx *.aoco *_VEC*
+	rm -rf *.aocx *.aoco *_VEC*

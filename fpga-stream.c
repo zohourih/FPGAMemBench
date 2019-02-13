@@ -29,7 +29,7 @@
 static cl_context       context;
 #if defined(STD) || defined(BLK)
 static cl_command_queue queue;
-#elif CH
+#elif defined(CH) || defined(SCH)
 static cl_command_queue queue_read, queue_write;
 #endif
 static cl_device_id*    deviceList;
@@ -97,12 +97,30 @@ static inline void init()
 	queue_write = clCreateCommandQueue(context, deviceList[0], 0, NULL);
 	if(!queue_write)
 	{
+		printf("ERROR: clCreateCommandQueue(queue_write) failed with error code: ");
+		display_error_message(error, stdout);
+		exit(-1);
+	}
+#elif SCH
+	// FPGA_1
+	queue_read = clCreateCommandQueue(context, deviceList[0], 0, NULL);
+	if(!queue_read)
+	{
 		printf("ERROR: clCreateCommandQueue(queue_read) failed with error code: ");
 		display_error_message(error, stdout);
 		exit(-1);
 	}
+
+	// FPGA_2
+	queue_write = clCreateCommandQueue(context, deviceList[1], 0, NULL);
+	if(!queue_write)
+	{
+		printf("ERROR: clCreateCommandQueue(queue_write) failed with error code: ");
+		display_error_message(error, stdout);
+		exit(-1);
+	}
 #endif
-	
+
 	free(platforms); // platforms isn't needed in the main function
 }
 
@@ -124,7 +142,10 @@ int main(int argc, char **argv)
 
 	// timing measurement
 	TimeStamp start, end;
-	double totalCopyTime = 0, totalMacTime = 0, avgCopyTime = 0, avgMacTime = 0;
+	double totalCopyTime = 0, avgCopyTime = 0;
+#ifndef SCH
+	double totalMacTime = 0, avgMacTime = 0;
+#endif
 
 	// for OpenCL errors
 	cl_int error = 0;
@@ -178,11 +199,11 @@ int main(int argc, char **argv)
 	}
 
 	// set array size based in input buffer size, default is 256k floats (= 100 MiB)
-	long size_B = size_MiB * 1024 * 1024;
+	long size_B = (long)size_MiB * 1024 * 1024;
 	long array_size = size_B / sizeof(float);
 	long padded_array_size = array_size + pad;
-	long padded_size_B = padded_array_size * sizeof(float);
-	int  padded_size_MiB = padded_size_B / (1024 * 1024);
+	long padded_size_Byte = padded_array_size * sizeof(float);
+	int  padded_size_MiB = padded_size_Byte / (1024 * 1024);
 #ifdef NDR
 	// set local and global work size
 	#ifdef STD
@@ -206,20 +227,48 @@ int main(int argc, char **argv)
 	init();
 
 	// load kernel file and build program
-	size_t kernelFileSize;
 #ifdef INTEL_FPGA
-	char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
-	cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
+	#ifdef SCH
+		size_t kernelFileSizeFPGA1, kernelFileSizeFPGA2;
+		char *kernelSourceFPGA1 = read_kernel("fpga-stream-kernel_FPGA_1.aocx", &kernelFileSizeFPGA1);
+		cl_program progFPGA1 = clCreateProgramWithBinary(context, 1, &deviceList[0], &kernelFileSizeFPGA1, (const unsigned char**)&kernelSourceFPGA1, NULL, &error);
+		if(error != CL_SUCCESS)
+		{
+			printf("ERROR: clCreateProgramWithBinary(FPGA1) failed with error: ");
+			display_error_message(error, stdout);
+			return -1;
+		}
+
+		char *kernelSourceFPGA2 = read_kernel("fpga-stream-kernel_FPGA_2.aocx", &kernelFileSizeFPGA2);
+		cl_program progFPGA2 = clCreateProgramWithBinary(context, 1, &deviceList[1], &kernelFileSizeFPGA2, (const unsigned char**)&kernelSourceFPGA2, NULL, &error);
+		if(error != CL_SUCCESS)
+		{
+			printf("ERROR: clCreateProgramWithBinary(FPGA2) failed with error: ");
+			display_error_message(error, stdout);
+			return -1;
+		}
+	#else
+		size_t kernelFileSize;
+		char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
+		cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
+		if(error != CL_SUCCESS)
+		{
+			printf("ERROR: clCreateProgramWithBinary() failed with error: ");
+			display_error_message(error, stdout);
+			return -1;
+		}
+	#endif
 #else
+	size_t kernelFileSize;
 	char *kernelSource = read_kernel("fpga-stream-kernel-std.cl", &kernelFileSize);
 	cl_program prog = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &error);
-#endif
 	if(error != CL_SUCCESS)
 	{
-		printf("ERROR: clCreateProgramWithSource/Binary() failed with error: ");
+		printf("ERROR: clCreateProgramWithSource() failed with error: ");
 		display_error_message(error, stdout);
 		return -1;
 	}
+#endif
 
 	char clOptions[200] = "";
 
@@ -232,7 +281,12 @@ int main(int argc, char **argv)
 #endif
 
 	// compile kernel file
+#ifdef SCH
+	clBuildProgram_SAFE(progFPGA1, 1, &deviceList[0], clOptions, NULL, NULL);
+	clBuildProgram_SAFE(progFPGA2, 1, &deviceList[1], clOptions, NULL, NULL);
+#else
 	clBuildProgram_SAFE(prog, deviceCount, deviceList, clOptions, NULL, NULL);
+#endif
 
 	// create kernel objects
 #if defined(STD) || defined(BLK)
@@ -253,6 +307,8 @@ int main(int argc, char **argv)
 		display_error_message(error, stdout);
 		return -1;
 	}
+
+	clReleaseProgram(prog);
 #elif CH
 	cl_kernel copyReadKernel, copyWriteKernel, macReadKernel, macWriteKernel;
 
@@ -287,8 +343,30 @@ int main(int argc, char **argv)
 		display_error_message(error, stdout);
 		return -1;
 	}
-#endif
+
 	clReleaseProgram(prog);
+#elif SCH
+	cl_kernel copyReadKernel, copyWriteKernel;
+
+	copyReadKernel = clCreateKernel(progFPGA1, "copy_read", &error);
+	if(error != CL_SUCCESS)
+	{
+		printf("ERROR: clCreateKernel(copy_read) failed with error: ");
+		display_error_message(error, stdout);
+		return -1;
+	}
+
+	copyWriteKernel = clCreateKernel(progFPGA2, "copy_write", &error);
+	if(error != CL_SUCCESS)
+	{
+		printf("ERROR: clCreateKernel(copy_write) failed with error: ");
+		display_error_message(error, stdout);
+		return -1;
+	}
+
+	clReleaseProgram(progFPGA1);
+	clReleaseProgram(progFPGA2);
+#endif
 
 #ifdef STD
 	printf("Kernel type:        Standard\n");
@@ -296,6 +374,8 @@ int main(int argc, char **argv)
 	printf("Kernel type:        Channelized\n");
 #elif BLK
 	printf("Kernel type:        Overlapped blocking\n");
+#elif SCH
+	printf("Kernel type:        Nallatech 510T serial channel\n");
 #endif
 #ifdef NDR
 	printf("Kernel model:       NDRange\n");
@@ -313,9 +393,11 @@ int main(int argc, char **argv)
 	#endif
 #endif
 	printf("Vector size:        %d\n", VEC);
-#if BLK
+#ifdef BLK
 	printf("Padding:            %d\n", pad);
 	printf("Overlap:            %d\n\n", overlap);
+#elif SCH
+	printf("\n");
 #else
 	printf("Padding:            %d\n\n", pad);
 #endif
@@ -323,9 +405,9 @@ int main(int argc, char **argv)
 
 	// create host buffers
 	if (verbose) printf("Creating host buffers...\n");
-	float* hostA = alignedMalloc(padded_size_B);
-	float* hostB = alignedMalloc(padded_size_B);
-	float* hostC = alignedMalloc(padded_size_B);
+	float* hostA = alignedMalloc(padded_size_Byte);
+	float* hostB = alignedMalloc(padded_size_Byte);
+	float* hostC = alignedMalloc(padded_size_Byte);
 
 	// populate host buffers
 	if (verbose) printf("Filling host buffers with random data...\n");
@@ -333,7 +415,7 @@ int main(int argc, char **argv)
 	{
 		uint seed = omp_get_thread_num();
 		#pragma omp for
-		for (int i = 0; i < array_size; i++)
+		for (long i = 0; i < array_size; i++)
 		{
 			// generate random float numbers between 0 and 1000
 			hostA[pad + i] = 1000.0 * (float)rand_r(&seed) / (float)(RAND_MAX);
@@ -344,33 +426,37 @@ int main(int argc, char **argv)
 	// create device buffers
 	if (verbose) printf("Creating device buffers...\n");
 #ifdef NO_INTERLEAVE
-	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_size_B, NULL, &error);
+	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_1, padded_size_Byte, NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_2, padded_size_B, NULL, &error);
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY  | MEM_BANK_2, padded_size_Byte, NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
-	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | MEM_BANK_2, padded_size_B, NULL, &error);
+	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY | MEM_BANK_2, padded_size_Byte, NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
 #else
-	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_size_B, NULL, &error);
+	cl_mem deviceA = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_size_Byte, NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceA (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
-	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_size_B, NULL, &error);
+	cl_mem deviceB = clCreateBuffer(context, CL_MEM_READ_ONLY , padded_size_Byte, NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceB (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
-	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, padded_size_B, NULL, &error);
+	cl_mem deviceC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, padded_size_Byte, NULL, &error);
 	if(error != CL_SUCCESS) { printf("ERROR: clCreateBuffer deviceC (size: %d MiB) failed with error: ", padded_size_MiB); display_error_message(error, stdout); return -1;}
 #endif
 
 	//write buffers
 	if (verbose) printf("Writing data to device...\n");
 #if defined(STD) || defined(BLK)
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_size_B, hostA, 0, 0, 0));
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_size_B, hostB, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_size_Byte, hostA, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_size_Byte, hostB, 0, 0, 0));
 #elif CH
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_size_B, hostA, 0, 0, 0));
-	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceB, 1, 0, padded_size_B, hostB, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_size_Byte, hostA, 0, 0, 0));
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceB, 1, 0, padded_size_Byte, hostB, 0, 0, 0));
+#elif SCH
+	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_size_Byte, hostA, 0, 0, 0));
 #endif
 
 	// constValue random float value between 0 and 1 for MAC operation in kernel
+#ifndef SCH
 	float constValue = (float)rand() / (float)(RAND_MAX);
+#endif
 
 #ifdef STD
 	#ifdef NDR
@@ -463,6 +549,20 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &overlap   ) );
 	#endif
+#elif SCH
+	#ifdef NDR
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+	#else
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &array_size) );
+	#endif
 #endif
 	// device warm-up
 	if (verbose) printf("Device warm-up...\n");
@@ -473,7 +573,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif CH
+#elif defined(CH) || defined(SCH)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
@@ -497,7 +597,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif CH
+#elif defined(CH) || defined(SCH)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
@@ -518,21 +618,21 @@ int main(int argc, char **argv)
 		// read data back to host
 		printf("Reading data back from device...\n");
 	#if defined(STD) || defined(BLK)
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue);
-	#elif CH
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
+	#elif defined (CH) || defined(SCH)
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
 
 		printf("Verifying \"Copy\" kernel: ");
 		int success = 1;
 		#pragma omp parallel for ordered default(none) firstprivate(array_size, pad, hostA, hostC, verbose) shared(success)
-		for (int i = 0; i < array_size; i++)
+		for (long i = 0; i < array_size; i++)
 		{
 			if (hostA[pad + i] != hostC[pad + i])
 			{
-				if (verbose) printf("Mismatch at index %d: Expected = %0.6f, Obtained = %0.6f\n", i, hostA[pad + i], hostC[pad + i]);
+				if (verbose) printf("Mismatch at index %ld: Expected = %0.6f, Obtained = %0.6f\n", i, hostA[pad + i], hostC[pad + i]);
 				success = 0;
 			}
 		}
@@ -548,6 +648,7 @@ int main(int argc, char **argv)
 			
 	}
 
+#ifndef SCH
 	// MAC kernel
 	if (verify || verbose) printf("Executing \"MAC\" kernel...\n");
 	for (int i = 0; i < iter; i++)
@@ -582,17 +683,17 @@ int main(int argc, char **argv)
 		// read data back to host
 		printf("Reading data back from device...\n");
 	#if defined(STD) || defined(BLK)
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue);
 	#elif CH
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_B, hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
 
 		printf("Verifying \"MAC\" kernel: ");
 		int success = 1;
 		#pragma omp parallel for ordered default(none) firstprivate(array_size, pad, constValue, verbose, hostA, hostB, hostC) shared(success)
-		for (int i = 0; i < array_size; i++)
+		for (long i = 0; i < array_size; i++)
 		{
 			float out = constValue * hostA[pad + i] + hostB[pad + i];
 			if (fabs(hostC[pad + i] - out) > 0.001)
@@ -611,16 +712,22 @@ int main(int argc, char **argv)
 			printf("FAILURE!\n");
 		}
 	}
+#endif
 
 	if (verify || verbose) printf("\n");
+#ifdef SCH
+	avgCopyTime = totalCopyTime / (double)iter;
+	printf("Channel bandwidth: %.3f GiB/s (%.3f GB/s)\n", (double)(size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(size_B) / (1.0E6 * avgCopyTime));
+#else
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
 	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * size_B) / (1.0E6 * avgCopyTime));
 	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * size_MiB * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * size_B) / (1.0E6 * avgMacTime ));
+#endif
 
 #if defined(STD) || defined(BLK)
 	clReleaseCommandQueue(queue);
-#elif CH
+#elif defined(CH) || defined(SCH)
 	clReleaseCommandQueue(queue_read);
 	clReleaseCommandQueue(queue_write);
 #endif
@@ -632,6 +739,11 @@ int main(int argc, char **argv)
 	free(hostA);
 	free(hostB);
 	free(hostC);
+#ifdef SCH
+	free(kernelSourceFPGA1);
+	free(kernelSourceFPGA2);
+#else
 	free(kernelSource);
+#endif
 	free(deviceList);
 }
