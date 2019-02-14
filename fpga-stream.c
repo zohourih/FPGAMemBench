@@ -396,8 +396,6 @@ int main(int argc, char **argv)
 #ifdef BLK
 	printf("Padding:            %d\n", pad);
 	printf("Overlap:            %d\n\n", overlap);
-#elif SCH
-	printf("\n");
 #else
 	printf("Padding:            %d\n\n", pad);
 #endif
@@ -645,7 +643,6 @@ int main(int argc, char **argv)
 		{
 			printf("FAILURE!\n");
 		}
-			
 	}
 
 #ifndef SCH
@@ -718,6 +715,7 @@ int main(int argc, char **argv)
 #ifdef SCH
 	avgCopyTime = totalCopyTime / (double)iter;
 	printf("Channel bandwidth: %.3f GiB/s (%.3f GB/s)\n", (double)(size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(size_B) / (1.0E6 * avgCopyTime));
+	printf("Memory bandwidth : %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * size_B) / (1.0E6 * avgCopyTime));
 #else
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;

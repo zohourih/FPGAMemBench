@@ -1,6 +1,5 @@
 //====================================================================================================================================
 // Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Standard version
-// Inspired by BabelStream: https://github.com/UoB-HPC/BabelStream/commits/master
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 

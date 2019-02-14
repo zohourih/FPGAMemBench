@@ -1,6 +1,5 @@
 //====================================================================================================================================
 // Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Channelized version
-// Inspired by BabelStream: https://github.com/UoB-HPC/BabelStream/commits/master
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 
@@ -19,7 +18,7 @@ typedef struct
 	float data[VEC];
 } CHAN_WIDTH;
 
-channel CHAN_WIDTH ch_copy __attribute__((depth(16)));
+channel CHAN_WIDTH ch_copy  __attribute__((depth(16)));
 channel CHAN_WIDTH ch_mac_a __attribute__((depth(16)));
 channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 

@@ -1,6 +1,5 @@
 //====================================================================================================================================
 // Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Serial channel bandwidth for Nallatech 510T board
-// Inspired by BabelStream: https://github.com/UoB-HPC/BabelStream/commits/master
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 
@@ -14,15 +13,19 @@
 	#define write_channel write_channel_intel
 #endif
 
+#define HALF_VEC VEC/2
+
 typedef struct
 {
-	float data[VEC];
+	float data[HALF_VEC];
 } CHAN_WIDTH;
 
 #ifdef FPGA_1
-channel CHAN_WIDTH sch_copy_out __attribute__((depth(16))) __attribute__((io("kernel_output_ch0")));
+channel CHAN_WIDTH sch_copy_out0 __attribute__((depth(16))) __attribute__((io("kernel_output_ch0" )));
+channel CHAN_WIDTH sch_copy_out1 __attribute__((depth(16))) __attribute__((io("kernel_output_ch1" )));
 #else
-channel CHAN_WIDTH sch_copy_in  __attribute__((depth(16))) __attribute__((io("kernel_input_ch0" )));
+channel CHAN_WIDTH sch_copy_in0  __attribute__((depth(16))) __attribute__((io("kernel_input_ch0")));
+channel CHAN_WIDTH sch_copy_in1  __attribute__((depth(16))) __attribute__((io("kernel_input_ch1")));
 #endif
 
 #ifdef NDR //NDRange kernels
@@ -33,15 +36,17 @@ __kernel void copy_read(__global const float* restrict a, const int pad)
 {
 	int tid = get_global_id(0);
 	int i = tid * VEC;
-	CHAN_WIDTH temp;
+	CHAN_WIDTH temp0, temp1;
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int j = 0; j < HALF_VEC; j++)
 	{
-		temp.data[j] = a[pad + i + j];
+		temp0.data[j] = a[pad + i + j];
+		temp1.data[j] = a[pad + i + j + HALF_VEC];
 	}
 
-	write_channel(sch_copy_out, temp);
+	write_channel(sch_copy_out0, temp0);
+	write_channel(sch_copy_out1, temp1);
 }
 
 #elif FPGA_2
@@ -50,14 +55,16 @@ __kernel void copy_write(__global float * restrict c, const int pad)
 {
 	int tid = get_global_id(0);
 	int i = tid * VEC;
-	CHAN_WIDTH temp;
+	CHAN_WIDTH temp0, temp1;
 
-	temp = read_channel(sch_copy_in);
+	temp0 = read_channel(sch_copy_in0);
+	temp1 = read_channel(sch_copy_in1);
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int j = 0; j < HALF_VEC; j++)
 	{
-		c[pad + i + j] = temp.data[j];
+		c[pad + i + j] = temp0.data[j];
+		c[pad + i + j + HALF_VEC] = temp1.data[j];
 	}
 }
 #endif
@@ -70,15 +77,17 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 {
 	for (int i = 0; i != size; i += VEC)
 	{
-		CHAN_WIDTH temp;
+		CHAN_WIDTH temp0, temp1;
 
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int j = 0; j < HALF_VEC; j++)
 		{
-			temp.data[j] = a[pad + i + j];
+			temp0.data[j] = a[pad + i + j];
+			temp1.data[j] = a[pad + i + j + HALF_VEC];
 		}
 
-		write_channel(sch_copy_out, temp);
+		write_channel(sch_copy_out0, temp0);
+		write_channel(sch_copy_out1, temp1);
 	}
 }
 
@@ -88,14 +97,16 @@ __kernel void copy_write(__global float * restrict c, const int pad, const int s
 {
 	for (int i = 0; i != size; i += VEC)
 	{
-		CHAN_WIDTH temp;
+		CHAN_WIDTH temp0, temp1;
 
-		temp = read_channel(sch_copy_in);
+		temp0 = read_channel(sch_copy_in0);
+		temp1 = read_channel(sch_copy_in1);
 
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int j = 0; j < HALF_VEC; j++)
 		{
-			c[pad + i + j] = temp.data[j];
+			c[pad + i + j] = temp0.data[j];
+			c[pad + i + j + HALF_VEC] = temp1.data[j];
 		}
 	}
 }
