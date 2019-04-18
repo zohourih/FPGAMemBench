@@ -695,7 +695,7 @@ int main(int argc, char **argv)
 			float out = constValue * hostA[pad + i] + hostB[pad + i];
 			if (fabs(hostC[pad + i] - out) > 0.001)
 			{
-				if (verbose) printf("Mismatch at index %d: Expected = %0.6f, Obtained = %0.6f\n", i, out, hostC[pad + i]);
+				if (verbose) printf("Mismatch at index %ld: Expected = %0.6f, Obtained = %0.6f\n", i, out, hostC[pad + i]);
 				success = 0;
 			}
 		}
