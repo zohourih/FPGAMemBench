@@ -60,8 +60,12 @@ ifeq ($(INTEL_FPGA),1)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_nocache
 	endif
 
+	ifdef TFMAX
+		KERNEL_FLAGS += $(DASH)fmax$(SPACE)$(TFMAX)
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_tfmax$(TFMAX)
+	endif
+
 	ifdef FMAX
-		KERNEL_FLAGS += $(DASH)fmax$(SPACE)$(FMAX)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_fmax$(FMAX)
 	endif
 
@@ -129,9 +133,10 @@ fpga-stream: $(HOST_FILE)
 %.aocx: %.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL).aocx
 	cd $(FOLDER) && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
 	rm -rf $(KERNEL_BINARY)* && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
+	sh ../override_fmax.sh $(KERNEL_BINARY_ALTER) $(FMAX) && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
 	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
 	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
 	cd ..
@@ -141,10 +146,10 @@ fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1
 fpga_1: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_1: $(KERNEL)-sch.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_1.aocx
-	cd $(FOLDER) && \	
+	cd $(FOLDER) && \
+	rm -rf $(KERNEL_BINARY)* && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
-	rm -rf $(KERNEL_BINARY)* && \
 	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
 	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
 	cd ..
@@ -154,10 +159,10 @@ fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2
 fpga_2: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_2: $(KERNEL)-sch.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_2.aocx
-	cd $(FOLDER) && \	
+	cd $(FOLDER) && \
+	rm -rf $(KERNEL_BINARY)* && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
-	rm -rf $(KERNEL_BINARY)* && \
 	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
 	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
 	cd ..
