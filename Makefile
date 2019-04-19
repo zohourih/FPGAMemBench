@@ -123,22 +123,44 @@ sch: $(HOST_BINARY) $(KERNEL_BINARY_SCH)
 fpga-stream: $(HOST_FILE)
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
 
-%.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG).aocx
+%.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG)
+#To bypass the auto conversion of "-" to "_" in AOC_VERSION < 17
+%.aocx: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 %.aocx: %.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY) $(KERNEL).aocx
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(FOLDER)/$(KERNEL_BINARY)
+	cd $(FOLDER) && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
+	rm -rf $(KERNEL_BINARY)* && \
+	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
+	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
+	cd ..
 
 fpga_1: KERNEL_FLAGS += -DFPGA_1
-fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1.aocx
+fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1
+fpga_1: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_1: $(KERNEL)-sch.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY) $(KERNEL)_FPGA_1.aocx
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(FOLDER)/$(KERNEL_BINARY)
+	cd $(FOLDER) && \	
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
+	rm -rf $(KERNEL_BINARY)* && \
+	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
+	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
+	cd ..
 
 fpga_2: KERNEL_FLAGS += -DFPGA_2
-fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2.aocx
+fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2
+fpga_2: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_2: $(KERNEL)-sch.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY) $(KERNEL)_FPGA_2.aocx
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $< -o $(FOLDER)/$(KERNEL_BINARY)
+	cd $(FOLDER) && \	
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
+	rm -rf $(KERNEL_BINARY)* && \
+	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
+	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
+	cd ..
 
 clean:
 	rm -f $(HOST_BINARY)
