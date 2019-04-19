@@ -7,12 +7,12 @@
 
 __attribute__((reqd_work_group_size(BSIZE, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
-__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const int size, const int overlap)
+__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const long size, const int overlap)
 {
 	int x = get_local_id(0);
 	int gid = get_group_id(0);
-	int bx = gid * (BSIZE - 2 * overlap);
-	int index = bx + x - overlap;
+	long bx = gid * (BSIZE - 2 * overlap);
+	long index = bx + x - overlap;
 
 	if (index >= 0 && index < size)
 	{ 
@@ -22,12 +22,12 @@ __kernel void copy(__global const float* restrict a, __global float * restrict c
 
 __attribute__((reqd_work_group_size(BSIZE, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int size, const int overlap)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const int overlap)
 {
 	int x = get_local_id(0);
 	int gid = get_group_id(0);
-	int bx = gid * (BSIZE - 2 * overlap);
-	int index = bx + x - overlap;
+	long bx = gid * (BSIZE - 2 * overlap);
+	long index = bx + x - overlap;
 
 	if (index >= 0 && index < size)
 	{ 
@@ -38,21 +38,21 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const int size, const int exit, const int overlap)
+__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const long size, const int exit, const int overlap)
 {
 	int cond = 0;
 	int x = 0;
-	int bx = 0;
+	long bx = 0;
 
 	while (cond != exit)
 	{
 		cond++;
 
-		int i = bx + x - overlap;
+		long i = bx + x - overlap;
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
-			int index = i + j;
+			long index = i + j;
 			if (index >= 0 && index < size)
 			{
 				c[pad + index] = a[pad + index];
@@ -69,21 +69,21 @@ __kernel void copy(__global const float* restrict a, __global float * restrict c
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int size, const int exit, const int overlap)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const int exit, const int overlap)
 {
 	int cond = 0;
 	int x = 0;
-	int bx = 0;
+	long bx = 0;
 
 	while (cond != exit)
 	{
 		cond++;
 
-		int i = bx + x - overlap;
+		long i = bx + x - overlap;
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
-			int index = i + j;
+			long index = i + j;
 			if (index >= 0 && index < size)
 			{
 				c[pad + index] = constValue * a[pad + index] + b[pad + index];

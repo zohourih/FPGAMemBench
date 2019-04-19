@@ -28,7 +28,7 @@ __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void copy_read(__global const float* restrict a, const int pad)
 {
 	int tid = get_global_id(0);
-	int i = tid * VEC;
+	long i = tid * VEC;
 	CHAN_WIDTH temp;
 
 	#pragma unroll
@@ -44,7 +44,7 @@ __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void copy_write(__global float * restrict c, const int pad)
 {
 	int tid = get_global_id(0);
-	int i = tid * VEC;
+	long i = tid * VEC;
 	CHAN_WIDTH temp;
 
 	temp = read_channel(ch_copy);
@@ -60,7 +60,7 @@ __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad)
 {
 	int tid = get_global_id(0);
-	int i = tid * VEC;
+	long i = tid * VEC;
 	CHAN_WIDTH temp_a, temp_b;
 
 	#pragma unroll
@@ -78,7 +78,7 @@ __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void mac_write(__global float* restrict c, const float constValue, const int pad)
 {
 	int tid = get_global_id(0);
-	int i = tid * VEC;
+	long i = tid * VEC;
 	CHAN_WIDTH temp_a, temp_b;
 
 	temp_a = read_channel(ch_mac_a);
@@ -94,9 +94,9 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_read(__global const float* restrict a, const int pad, const int size)
+__kernel void copy_read(__global const float* restrict a, const int pad, const long size)
 {
-	for (int i = 0; i != size; i += VEC)
+	for (long i = 0; i != size; i += VEC)
 	{
 		CHAN_WIDTH temp;
 
@@ -111,9 +111,9 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float * restrict c, const int pad, const int size)
+__kernel void copy_write(__global float * restrict c, const int pad, const long size)
 {
-	for (int i = 0; i != size; i += VEC)
+	for (long i = 0; i != size; i += VEC)
 	{
 		CHAN_WIDTH temp;
 
@@ -128,9 +128,9 @@ __kernel void copy_write(__global float * restrict c, const int pad, const int s
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int size)
+__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const long size)
 {
-	for (int i = 0; i != size; i += VEC)
+	for (long i = 0; i != size; i += VEC)
 	{
 		CHAN_WIDTH temp_a, temp_b;
 
@@ -147,9 +147,9 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int size)
+__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const long size)
 {
-	for (int i = 0; i != size; i += VEC)
+	for (long i = 0; i != size; i += VEC)
 	{
 		CHAN_WIDTH temp_a, temp_b;
 

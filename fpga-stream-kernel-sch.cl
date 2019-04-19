@@ -35,7 +35,7 @@ __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void copy_read(__global const float* restrict a, const int pad)
 {
 	int tid = get_global_id(0);
-	int i = tid * VEC;
+	long i = tid * VEC;
 	CHAN_WIDTH temp0, temp1;
 
 	#pragma unroll
@@ -54,7 +54,7 @@ __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __kernel void copy_write(__global float * restrict c, const int pad)
 {
 	int tid = get_global_id(0);
-	int i = tid * VEC;
+	long i = tid * VEC;
 	CHAN_WIDTH temp0, temp1;
 
 	temp0 = read_channel(sch_copy_in0);
@@ -73,9 +73,9 @@ __kernel void copy_write(__global float * restrict c, const int pad)
 
 #ifdef FPGA_1
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_read(__global const float* restrict a, const int pad, const int size)
+__kernel void copy_read(__global const float* restrict a, const int pad, const long size)
 {
-	for (int i = 0; i != size; i += VEC)
+	for (long i = 0; i != size; i += VEC)
 	{
 		CHAN_WIDTH temp0, temp1;
 
@@ -93,9 +93,9 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 
 #elif FPGA_2
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float * restrict c, const int pad, const int size)
+__kernel void copy_write(__global float * restrict c, const int pad, const long size)
 {
-	for (int i = 0; i != size; i += VEC)
+	for (long i = 0; i != size; i += VEC)
 	{
 		CHAN_WIDTH temp0, temp1;
 
