@@ -273,7 +273,11 @@ int main(int argc, char **argv)
 	char clOptions[200] = "";
 
 #ifndef INTEL_FPGA
-	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d ", VEC, WGS);
+	#ifdef NDR
+		sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DWGS=%d ", VEC, WGS);
+	#else
+		sprintf(clOptions + strlen(clOptions), "-DVEC=%d ", VEC);
+	#endif
 #endif
 
 #ifdef NDR
