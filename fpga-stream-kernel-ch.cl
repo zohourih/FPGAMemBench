@@ -41,7 +41,7 @@ __kernel void copy_read(__global const float* restrict a, const int pad)
 }
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
-__kernel void copy_write(__global float * restrict c, const int pad)
+__kernel void copy_write(__global float* restrict c, const int pad)
 {
 	int tid = get_global_id(0);
 	long i = tid * VEC;
@@ -111,7 +111,7 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const l
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float * restrict c, const int pad, const long size)
+__kernel void copy_write(__global float* restrict c, const int pad, const long size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{

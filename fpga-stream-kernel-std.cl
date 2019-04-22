@@ -7,7 +7,7 @@
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
-__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad)
 {
 	long index = get_global_id(0);
 	c[pad + index] = a[pad + index];
@@ -24,7 +24,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const long size)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{

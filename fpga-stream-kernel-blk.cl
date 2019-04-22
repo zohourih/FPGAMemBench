@@ -7,7 +7,7 @@
 
 __attribute__((reqd_work_group_size(BSIZE, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
-__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const long size, const int overlap)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const int overlap)
 {
 	int x = get_local_id(0);
 	int gid = get_group_id(0);
@@ -38,7 +38,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float * restrict c, const int pad, const long size, const int exit, const int overlap)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const int exit, const int overlap)
 {
 	int cond = 0;
 	int x = 0;
