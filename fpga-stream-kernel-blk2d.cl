@@ -1,5 +1,5 @@
 //====================================================================================================================================
-// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: 2D overlapped blocking version
+// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: 2D overlapped blocking
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 

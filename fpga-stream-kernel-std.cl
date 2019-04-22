@@ -1,5 +1,5 @@
 //====================================================================================================================================
-// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Standard Version
+// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Standard
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 

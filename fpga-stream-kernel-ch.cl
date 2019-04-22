@@ -1,5 +1,5 @@
 //====================================================================================================================================
-// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Channelized version
+// Memory bandwidth benchmark kernel for OpenCL-capable FPGAs: Channelized
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 
