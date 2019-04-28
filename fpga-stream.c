@@ -270,11 +270,7 @@ int main(int argc, char **argv)
 	char clOptions[200] = "";
 
 #ifndef INTEL_FPGA
-	#ifdef NDR
-		sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DBSIZE=%d ", VEC, BSIZE);
-	#else
-		sprintf(clOptions + strlen(clOptions), "-DVEC=%d ", VEC);
-	#endif
+	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DBSIZE=%d ", VEC, BSIZE);
 #endif
 
 #ifdef NDR
