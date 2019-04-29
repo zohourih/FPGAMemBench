@@ -204,21 +204,6 @@ int main(int argc, char **argv)
 	long padded_array_size = array_size + pad;
 	long padded_size_Byte = padded_array_size * sizeof(float);
 	int  padded_size_MiB = padded_size_Byte / (1024 * 1024);
-#ifdef NDR
-	// set local and global work size
-	#if defined(STD) || defined(BLK2D)
-		int valid_blk  = BSIZE - 2 * overlap;
-		int exit_index = (array_size % valid_blk == 0) ? array_size : array_size + valid_blk - array_size % valid_blk;
-		int num_blk = exit_index / valid_blk;
-		int total_index  = BSIZE * num_blk;
-
-		size_t localSize[3] = {(size_t)BSIZE, 1, 1};
-		size_t globalSize[3] = {(size_t)total_index, 1, 1};
-	#elif CH
-		size_t localSize[3] = {(size_t)WGS, 1, 1};
-		size_t globalSize[3] = {(size_t)(array_size / VEC), 1, 1};
-	#endif
-#endif
 
 	// OpenCL initialization
 	init();
@@ -458,7 +443,17 @@ int main(int argc, char **argv)
 #endif
 
 #if defined(STD) || defined(BLK2D)
+	int valid_blk  = BSIZE - overlap;
+	int exit_index = (array_size % valid_blk == 0) ? array_size : array_size + valid_blk - (array_size % valid_blk);
+	int num_blk = exit_index / valid_blk;
+
 	#ifdef NDR
+		int total_index = BSIZE * num_blk;
+
+		// set local and global work size
+		size_t localSize[3] = {(size_t)BSIZE, 1, 1};
+		size_t globalSize[3] = {(size_t)total_index, 1, 1};
+
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
@@ -473,10 +468,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &overlap   ) );
 	#else
-		int valid_blk  = BSIZE - 2 * overlap;
-		int exit_index = (array_size % valid_blk == 0) ? array_size : array_size + valid_blk - array_size % valid_blk;
-		int num_blk = exit_index / valid_blk;
-		int loop_exit  = BSIZE * num_blk / VEC;
+		int loop_exit = BSIZE * num_blk / VEC;
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
@@ -496,6 +488,10 @@ int main(int argc, char **argv)
 	#endif
 #elif CH
 	#ifdef NDR
+		// set local and global work size
+		size_t localSize[3] = {(size_t)WGS, 1, 1};
+		size_t globalSize[3] = {(size_t)(array_size / VEC), 1, 1};
+
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
@@ -690,7 +686,13 @@ int main(int argc, char **argv)
 #endif
 
 	if (verify || verbose) printf("\n");
-#ifdef SCH
+#ifdef STD
+	avgCopyTime = totalCopyTime / (double)iter;
+	avgMacTime = totalMacTime / (double)iter;
+	long totalSize_B = ((num_blk * BSIZE) - (exit_index + overlap - array_size)) * sizeof(float);
+	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * totalSize_B * 1000.0) / (1.0E9 * avgCopyTime), (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime));
+	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * totalSize_B * 1000.0) / (1.0E9 * avgMacTime ), (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ));
+#elif SCH
 	avgCopyTime = totalCopyTime / (double)iter;
 	printf("Channel bandwidth: %.3f GiB/s (%.3f GB/s)\n", (double)(size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(size_B) / (1.0E6 * avgCopyTime));
 	printf("Memory bandwidth : %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * size_B) / (1.0E6 * avgCopyTime));

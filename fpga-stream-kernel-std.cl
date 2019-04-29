@@ -12,9 +12,9 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	int x = get_local_id(0);
 	int gid = get_group_id(0);
 	long bx = gid * (BSIZE - overlap);
-	long index = bx + x - overlap;
+	long index = bx + x;
 
-	if (index >= 0 && index < size)
+	if (index < size)
 	{ 
 		c[pad + index] = a[pad + index];
 	}
@@ -27,9 +27,9 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 	int x = get_local_id(0);
 	int gid = get_group_id(0);
 	long bx = gid * (BSIZE - overlap);
-	long index = bx + x - overlap;
+	long index = bx + x;
 
-	if (index >= 0 && index < size)
+	if (index < size)
 	{ 
 		c[pad + index] = constValue * a[pad + index] + b[pad + index];
 	}
@@ -48,12 +48,12 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	{
 		cond++;
 
-		long i = bx + x - overlap;
+		long i = bx + x;
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
 			long index = i + j;
-			if (index >= 0 && index < size)
+			if (index < size)
 			{
 				c[pad + index] = a[pad + index];
 			}
@@ -79,12 +79,12 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 	{
 		cond++;
 
-		long i = bx + x - overlap;
+		long i = bx + x;
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
 			long index = i + j;
-			if (index >= 0 && index < size)
+			if (index < size)
 			{
 				c[pad + index] = constValue * a[pad + index] + b[pad + index];
 			}
