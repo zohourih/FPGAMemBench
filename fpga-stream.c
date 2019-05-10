@@ -126,7 +126,13 @@ static inline void init()
 
 static inline void usage(char **argv)
 {
+#ifdef STD
 	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> -o <number of overlapped indexes> --verbose --verify\n", argv[0]);
+#elif BLK2D
+	printf("\nUsage: %s -r <row size> -c <column size> -n <number of iterations> -p <number of padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
+#else
+	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> --verbose --verify\n", argv[0]);
+#endif
 }
 
 int main(int argc, char **argv)
@@ -136,8 +142,12 @@ int main(int argc, char **argv)
 	int iter = 1;									// number of iterations
 	int pad = 0;									// padding
 	int verbose = 0, verify = 0;
-#if defined(STD) || defined(BLK2D)
+#ifdef STD
 	int overlap = 0;
+#elif BLK2D
+	int halo = 0;
+	int rows = 5120;
+	int cols = 5120;
 #endif
 
 	// timing measurement
@@ -153,11 +163,24 @@ int main(int argc, char **argv)
 	int arg = 1;
 	while (arg < argc)
 	{
+	#ifndef BLKD2D
 		if(strcmp(argv[arg], "-s") == 0)
 		{
 			size_MiB = atoi(argv[arg + 1]);
 			arg += 2;
 		}
+	#else
+		if(strcmp(argv[arg], "-r") == 0)
+		{
+			rows = atoi(argv[arg + 1]);
+			arg += 2;
+		}
+		if(strcmp(argv[arg], "-c") == 0)
+		{
+			cols = atoi(argv[arg + 1]);
+			arg += 2;
+		}
+	#endif
 		else if (strcmp(argv[arg], "-n") == 0)
 		{
 			iter = atoi(argv[arg + 1]);
@@ -168,10 +191,16 @@ int main(int argc, char **argv)
 			pad = atoi(argv[arg + 1]);
 			arg += 2;
 		}
-	#if defined(STD) || defined(BLK2D)
+	#ifdef STD
 		else if (strcmp(argv[arg], "-o") == 0)
 		{
 			overlap = atoi(argv[arg + 1]);
+			arg += 2;
+		}
+	#elif BLK2D
+		else if (strcmp(argv[arg], "-hw") == 0)
+		{
+			halo = atoi(argv[arg + 1]);
 			arg += 2;
 		}
 	#endif
@@ -194,11 +223,14 @@ int main(int argc, char **argv)
 		{
 			printf("\nInvalid input!");
 			usage(argv);
-			exit (-1);
+			return -1;
 		}
 	}
 
 	// set array size based in input buffer size, default is 256k floats (= 100 MiB)
+#ifdef BLK2D
+	size_MiB = rows * cols * sizeof(float) / (1024 * 1024);
+#endif
 	long size_B = (long)size_MiB * 1024 * 1024;
 	long array_size = size_B / sizeof(float);
 	long padded_array_size = array_size + pad;
@@ -240,16 +272,25 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	#endif
-#else
-	size_t kernelFileSize;
-	char *kernelSource = read_kernel("fpga-stream-kernel-std.cl", &kernelFileSize);
-	cl_program prog = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &error);
-	if(error != CL_SUCCESS)
-	{
-		printf("ERROR: clCreateProgramWithSource() failed with error: ");
-		display_error_message(error, stdout);
+#else // for CPU/GPUs
+	#if defined(STD) || defined(BLK2D)
+		size_t kernelFileSize;
+		#ifdef STD
+			char *kernelSource = read_kernel("fpga-stream-kernel-std.cl", &kernelFileSize);
+		#else
+			char *kernelSource = read_kernel("fpga-stream-kernel-blk2d.cl", &kernelFileSize);
+		#endif
+		cl_program prog = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &error);
+		if(error != CL_SUCCESS)
+		{
+			printf("ERROR: clCreateProgramWithSource() failed with error: ");
+			display_error_message(error, stdout);
+			return -1;
+		}
+	#else
+		printf("Kernel not supported on this device!\n");
 		return -1;
-	}
+	#endif
 #endif
 
 	char clOptions[200] = "";
@@ -366,6 +407,11 @@ int main(int argc, char **argv)
 	printf("Kernel model:       Single Work-item\n");
 #endif
 
+#ifdef BLK2D
+	printf("Row size:           %d indexes\n", rows);
+	printf("Column size:        %d indexes\n", cols);
+#endif
+
 	printf("Array size:         %ld indexes\n", array_size);
 	printf("Buffer size:        %d MiB\n", size_MiB);
 	printf("Total memory usage: %d MiB\n", 3 * size_MiB);
@@ -380,9 +426,12 @@ int main(int argc, char **argv)
 
 	printf("Vector size:        %d\n", VEC);
 
-#if defined(STD) || defined(BLK2D)
+#ifdef STD
 	printf("Padding:            %d\n", pad);
 	printf("Overlap:            %d\n\n", overlap);
+#elif BLK2D
+	printf("Padding:            %d\n", pad);
+	printf("Halo width:         %d\n\n", halo);
 #else
 	printf("Padding:            %d\n\n", pad);
 #endif
@@ -442,7 +491,7 @@ int main(int argc, char **argv)
 	float constValue = (float)rand() / (float)(RAND_MAX);
 #endif
 
-#if defined(STD) || defined(BLK2D)
+#ifdef STD
 	int valid_blk  = BSIZE - overlap;
 	int exit_index = (array_size % valid_blk == 0) ? array_size : array_size + valid_blk - (array_size % valid_blk);
 	int num_blk = exit_index / valid_blk;
@@ -485,6 +534,54 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &overlap   ) );
+	#endif
+#elif BLK2D
+	int valid_blk  = BSIZE - 2 * halo;
+	int exit_index = (cols % valid_blk == 0) ? cols : cols + valid_blk - (cols % valid_blk);
+	int num_blk = exit_index / valid_blk;
+
+	#ifdef NDR
+		int total_cols = BSIZE * num_blk;
+
+		// set local and global work size
+		size_t localSize[3] = {(size_t)BSIZE, 1, 1};
+		size_t globalSize[3] = {(size_t)total_cols, 1, 1};
+
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 5, sizeof(cl_int  ), (void*) &halo      ) );
+
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &halo      ) );
+	#else
+		int loop_exit = BSIZE * num_blk / VEC;
+
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 5, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 6, sizeof(cl_int  ), (void*) &halo      ) );
+
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 8, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
 #elif CH
 	#ifdef NDR
