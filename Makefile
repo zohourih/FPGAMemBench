@@ -4,6 +4,7 @@ HOST_BINARY = $(NAME)
 KERNEL = $(NAME)-kernel
 HOST_COMPILER = gcc
 HOST_FLAGS = -O3 -Wall -Wextra -lrt -fopenmp
+SRC_FOLDER = $(shell pwd)
 
 ifeq ($(INTEL_FPGA),1)
 	AOC_VERSION = $(shell aoc --version | grep Build | cut -c 9-10)
@@ -135,8 +136,8 @@ fpga-stream: $(HOST_FILE)
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL).aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
-	sh ../override_fmax.sh $(KERNEL_BINARY_ALTER) $(FMAX) && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) -c && \
+	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY_ALTER) $(FMAX) && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
 	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
 	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
@@ -149,7 +150,7 @@ fpga_1: $(KERNEL)-sch.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_1.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) -c && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
 	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
 	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
@@ -162,7 +163,7 @@ fpga_2: $(KERNEL)-sch.cl
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_2.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) ../$< -o $(KERNEL_BINARY_ALTER) -c && \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) -c && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).aoco && \
 	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
 	mv $(KERNEL_BINARY_ALTER).aoco $(KERNEL_BINARY).aoco && mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && \
