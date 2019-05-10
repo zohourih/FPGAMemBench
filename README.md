@@ -84,7 +84,7 @@ for {set i 0} {$i < $argc} {incr i} {
 
 **Quartus Prime Pro:**
 
-- Backup *install_dir*/hld/ip/board/bsp/adjust_plls_a10.tcl
+- Backup \*install_dir\*/hld/ip/board/bsp/adjust_plls_a10.tcl
 - Edit as follows:
 
 Replace
