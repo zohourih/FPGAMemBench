@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 	int arg = 1;
 	while (arg < argc)
 	{
-	#ifndef BLKD2D
+	#ifndef BLK2D
 		if(strcmp(argv[arg], "-s") == 0)
 		{
 			size_MiB = atoi(argv[arg + 1]);
@@ -787,6 +787,12 @@ int main(int argc, char **argv)
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
 	long totalSize_B = ((num_blk * BSIZE) - (exit_index + overlap - array_size)) * sizeof(float);
+	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * totalSize_B * 1000.0) / (1.0E9 * avgCopyTime), (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime));
+	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * totalSize_B * 1000.0) / (1.0E9 * avgMacTime ), (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ));
+#elif BLK2D
+	avgCopyTime = totalCopyTime / (double)iter;
+	avgMacTime = totalMacTime / (double)iter;
+	long totalSize_B = ((num_blk * BSIZE) - (exit_index + 2 * halo - cols)) * rows * sizeof(float);
 	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * totalSize_B * 1000.0) / (1.0E9 * avgCopyTime), (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime));
 	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * totalSize_B * 1000.0) / (1.0E9 * avgMacTime ), (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ));
 #elif SCH
