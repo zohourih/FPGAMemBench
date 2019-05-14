@@ -129,7 +129,7 @@ static inline void usage(char **argv)
 #ifdef STD
 	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> -o <number of overlapped indexes> --verbose --verify\n", argv[0]);
 #elif BLK2D
-	printf("\nUsage: %s -r <row size> -c <column size> -n <number of iterations> -p <number of padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
+	printf("\nUsage: %s -r <row width> -c <column height> -n <number of iterations> -p <number of padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
 #else
 	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> --verbose --verify\n", argv[0]);
 #endif
@@ -537,8 +537,8 @@ int main(int argc, char **argv)
 	#endif
 #elif BLK2D
 	int valid_blk  = BSIZE - 2 * halo;
-	int exit_index = (cols % valid_blk == 0) ? cols : cols + valid_blk - (cols % valid_blk);
-	int num_blk = exit_index / valid_blk;
+	int exit_col = (cols % valid_blk == 0) ? cols : cols + valid_blk - (cols % valid_blk);
+	int num_blk = exit_col / valid_blk;
 
 	#ifdef NDR
 		int total_cols = BSIZE * num_blk;
@@ -563,7 +563,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &cols      ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
-		int loop_exit = BSIZE * num_blk / VEC;
+		int loop_exit = BSIZE * num_blk * rows / VEC;
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
@@ -792,7 +792,7 @@ int main(int argc, char **argv)
 #elif BLK2D
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	long totalSize_B = ((num_blk * BSIZE) - (exit_index + 2 * halo - cols)) * rows * sizeof(float);
+	long totalSize_B = ((num_blk * BSIZE) - (exit_col + 2 * halo - cols)) * rows * sizeof(float);
 	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * totalSize_B * 1000.0) / (1.0E9 * avgCopyTime), (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime));
 	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * totalSize_B * 1000.0) / (1.0E9 * avgMacTime ), (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ));
 #elif SCH
