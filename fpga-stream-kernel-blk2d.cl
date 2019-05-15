@@ -11,16 +11,14 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 {
 	int x = get_local_id(0);
 	int gid = get_group_id(0);
+	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
 	int gx = bx + x - halo;
 
-	for (int y = 0; y < rows; y++)
+	if (gx >= 0 && gx < cols)
 	{
-		if (gx >= 0 && gx < cols)
-		{
-			long index = y * cols + gx;
-			c[pad + index] = a[pad + index];
-		}
+		long index = y * cols + gx;
+		c[pad + index] = a[pad + index];
 	}
 }
 
@@ -30,16 +28,14 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 {
 	int x = get_local_id(0);
 	int gid = get_group_id(0);
+	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
 	int gx = bx + x - halo;
 
-	for (int y = 0; y < rows; y++)
+	if (gx >= 0 && gx < cols)
 	{
-		if (gx >= 0 && gx < cols)
-		{
-			long index = y * cols + gx;
-			c[pad + index] = constValue * a[pad + index] + b[pad + index];
-		}
+		long index = y * cols + gx;
+		c[pad + index] = constValue * a[pad + index] + b[pad + index];
 	}
 }
 

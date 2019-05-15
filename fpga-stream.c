@@ -25,6 +25,12 @@
 	#define MEM_BANK_2 CL_CHANNEL_2_INTELFPGA
 #endif
 
+#ifdef BLK2D
+	#define DIM 2
+#else
+	#define DIM 1
+#endif
+
 // global variables
 static cl_context       context;
 #if defined(STD) || defined(BLK2D)
@@ -392,48 +398,52 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef STD
-	printf("Kernel type:        Standard\n");
+	printf("Kernel type:           Standard\n");
 #elif CH
-	printf("Kernel type:        Channelized\n");
+	printf("Kernel type:           Channelized\n");
 #elif BLK2D
-	printf("Kernel type:        2D overlapped blocking\n");
+	printf("Kernel type:           2D overlapped blocking\n");
 #elif SCH
-	printf("Kernel type:        Nallatech 510T serial channel\n");
+	printf("Kernel type:           Nallatech 510T serial channel\n");
 #endif
 
 #ifdef NDR
-	printf("Kernel model:       NDRange\n");
+	printf("Kernel model:          NDRange\n");
 #else
-	printf("Kernel model:       Single Work-item\n");
+	printf("Kernel model:          Single Work-item\n");
 #endif
 
 #ifdef BLK2D
-	printf("Row size:           %d indexes\n", rows);
-	printf("Column size:        %d indexes\n", cols);
+	printf("Row size:              %d indexes\n", rows);
+	printf("Column size:           %d indexes\n", cols);
 #endif
 
-	printf("Array size:         %ld indexes\n", array_size);
-	printf("Buffer size:        %d MiB\n", size_MiB);
-	printf("Total memory usage: %d MiB\n", 3 * size_MiB);
+	printf("Array size:            %ld indexes\n", array_size);
+	printf("Buffer size:           %d MiB\n", size_MiB);
+	printf("Total memory usage:    %d MiB\n", 3 * size_MiB);
 	
 #ifdef NDR
 	#if defined(STD) || defined(BLK2D)
-	printf("Work-group size:    %d\n", BSIZE);
+	printf("Work-group\Block size: %d\n", BSIZE);
 	#else
-	printf("Work-group size:    %d\n", WGS);
+	printf("Work-group size:       %d\n", WGS);
+	#endif
+#else
+	#if defined(STD) || defined(BLK2D)
+	printf("Block size:            %d\n", BSIZE);
 	#endif
 #endif
 
-	printf("Vector size:        %d\n", VEC);
+	printf("Vector size:           %d\n", VEC);
 
 #ifdef STD
-	printf("Padding:            %d\n", pad);
-	printf("Overlap:            %d\n\n", overlap);
+	printf("Padding:               %d\n", pad);
+	printf("Overlap:               %d\n\n", overlap);
 #elif BLK2D
-	printf("Padding:            %d\n", pad);
-	printf("Halo width:         %d\n\n", halo);
+	printf("Padding:               %d\n", pad);
+	printf("Halo width:            %d\n\n", halo);
 #else
-	printf("Padding:            %d\n\n", pad);
+	printf("Padding:               %d\n\n", pad);
 #endif
 
 	// create host buffers
@@ -545,7 +555,7 @@ int main(int argc, char **argv)
 
 		// set local and global work size
 		size_t localSize[3] = {(size_t)BSIZE, 1, 1};
-		size_t globalSize[3] = {(size_t)total_cols, 1, 1};
+		size_t globalSize[3] = {(size_t)total_cols, (size_t)rows, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
@@ -637,7 +647,7 @@ int main(int argc, char **argv)
 	if (verbose) printf("Device warm-up...\n");
 #if defined(STD) || defined(BLK2D)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
 		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
 	#endif
@@ -661,7 +671,7 @@ int main(int argc, char **argv)
 
 #if defined(STD) || defined(BLK2D)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, copyKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
 		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
 	#endif
@@ -725,7 +735,7 @@ int main(int argc, char **argv)
 
 #if defined(STD) || defined(BLK2D)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, macKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue, macKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
 		CL_SAFE_CALL( clEnqueueTask(queue, macKernel, 0, NULL, NULL) );
 	#endif
