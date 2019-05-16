@@ -15,6 +15,7 @@ ifeq ($(INTEL_FPGA),1)
 	endif
 	AOC_VERSION = $(shell aoc --version | grep Build | cut -c 9-10)
 	LEGACY = $(shell echo $(AOC_VERSION)\<17 | bc)
+	RTL = $(shell echo $(AOC_VERSION)\>=18 | bc)
 
 	INC = $(shell aocl compile-config)
 	LIB = $(shell aocl link-config) -lOpenCL
@@ -23,11 +24,11 @@ ifeq ($(INTEL_FPGA),1)
 	ifeq ($(LEGACY),1)
 		DASH = --
 		SPACE = $(shell echo " ")
-		SWITCH = -c
-		EXT = aoco
 	else
 		DASH = -
 		SPACE = =
+	endif
+	ifeq ($(RTL),1)
 		ifeq ($(AOC_PRO),1)
 			SWITCH = -rtl
 			EXT = aocr
@@ -35,6 +36,9 @@ ifeq ($(INTEL_FPGA),1)
 			SWITCH = -c
 			EXT = aoco
 		endif
+	else
+		SWITCH = -c
+		EXT = aoco
 	endif
 	KERNEL_FLAGS = -v $(DASH)report
 
