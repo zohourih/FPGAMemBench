@@ -5,7 +5,7 @@ Inspired by BabelStream: https://github.com/UoB-HPC/BabelStream/commits/master
 
 # To enable Fmax Override:
 
-**Quartus Prime Standard and Quartus Prime Pro v18.1 and above:**
+**Quartus Prime Standard:**
 
 - Backup \*install_dir\*/hld/ip/board/bsp/adjust_plls.tcl
 - Edit as follows:
@@ -82,9 +82,9 @@ for {set i 0} {$i < $argc} {incr i} {
 }
 ```
 
-**Quartus Prime Pro below v18.1:**
+**Quartus Prime Pro:**
 
-- Backup \*install_dir\*/hld/ip/board/bsp/adjust_plls_a10.tcl
+- Backup \*install_dir\*/hld/ip/board/bsp/adjust_plls_a10.tcl for below v18.1 and \*install_dir\*/hld/ip/board/bsp/adjust_plls.tcl for above.
 - Edit as follows:
 
 Replace
