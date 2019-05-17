@@ -4,12 +4,16 @@ export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
 iter=5
 size=768
+row=24576
+col=8192
+size_switch=""
 board=de5net
 version=`aoc --version | grep Build | cut -d " " -f 2`
 folder=`echo "$board"_"$version"`
 verify=""
 pad_end=0
-overlap=4
+overlap=8
+halo=4
 overlap_switch=""
 if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]]
 then
@@ -35,10 +39,19 @@ for i in `ls $folder | grep aocx | sort -V`
 do
 	name="${i%.*}"
 	type=`echo $name | cut -d "-" -f 4 | cut -d "_" -f 1`
-	if [[ "$type" == "blk" ]]
+
+	if [[ "$type" == "std" ]]
 	then
 		overlap_switch="-o $overlap"
+		size_switch="-s $size"
+	elif [[ "$type" == "blk2d" ]]
+	then
+		overlap_switch="-hw $halo"
+		size_switch="-r $row -c $col"
+	else
+		size_switch="-s $size"
 	fi
+
 	if [[ `echo $name | cut -d "_" -f 2` == NDR ]]
 	then
 		ndr=1
@@ -47,7 +60,9 @@ do
 		ndr=0
 		model=SWI
 	fi
+
 	VEC=`echo $name | cut -d "_" -f 3 | cut -c 4-`
+
 	if [[ -n `echo $name | grep nointer` ]]
 	then
 		nointer=1
@@ -56,12 +71,14 @@ do
 		nointer=0
 		inter=Y
 	fi
+
 	if [[ -n `echo $name | grep nocache` ]]
 	then
 		cache=N
 	else
 		cache=Y
 	fi
+
 	freq=`cat $folder/$name/acl_quartus_report.txt | grep Actual | cut -d " " -f 4 | xargs printf %0.2f`
 
 	make clean >/dev/null 2>&1; make $type INTEL_FPGA=1 HOST_ONLY=1 VEC=$VEC NO_INTER=$nointer NDR=$ndr >/dev/null 2>&1
@@ -71,7 +88,7 @@ do
 
 	for ((pad = 0 ; pad <= $pad_end ; pad++))
 	do
-		out=`DEVICE_TYPE=FPGA ./fpga-stream -s $size -n $iter -p $pad $overlap_switch $verify 2>&1`
+		out=`DEVICE_TYPE=FPGA ./fpga-stream $size_switch -n $iter -p $pad $overlap_switch $verify 2>&1`
 		#echo "$out" >> ast.txt
 		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
 		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
