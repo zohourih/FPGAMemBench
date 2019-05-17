@@ -152,6 +152,7 @@ fpga-stream: $(HOST_FILE)
 #To bypass the auto conversion of "-" to "_" in AOC_VERSION < 17
 %.aocx: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 %.aocx: %.cl
+	mkdir -p $(FOLDER)
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL).aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
@@ -166,6 +167,7 @@ fpga_1: KERNEL_FLAGS += -DFPGA_1
 fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1
 fpga_1: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_1: $(KERNEL)-sch.cl
+	mkdir -p $(FOLDER)
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_1.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
@@ -180,6 +182,7 @@ fpga_2: KERNEL_FLAGS += -DFPGA_2
 fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2
 fpga_2: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_2: $(KERNEL)-sch.cl
+	mkdir -p $(FOLDER)
 	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_2.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
