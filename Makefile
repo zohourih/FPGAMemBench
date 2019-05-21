@@ -153,7 +153,7 @@ fpga-stream: $(HOST_FILE)
 %.aocx: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 %.aocx: %.cl
 	mkdir -p $(FOLDER)
-	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL).aocx
+	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL).aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) $(SWITCH) && \
@@ -168,7 +168,7 @@ fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1
 fpga_1: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_1: $(KERNEL)-sch.cl
 	mkdir -p $(FOLDER)
-	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_1.aocx
+	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_1.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) $(SWITCH) && \
@@ -183,7 +183,7 @@ fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2
 fpga_2: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_2: $(KERNEL)-sch.cl
 	mkdir -p $(FOLDER)
-	ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_2.aocx
+	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_2.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) $(SWITCH) && \
