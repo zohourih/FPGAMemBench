@@ -38,7 +38,13 @@ then
 	indent=${orig%"$text"}
 	orig_fix=$(printf '%s\n' "$orig" | sed 's:[\/&]:\\&:g;$!s/$/\\/')
 
-	new=`echo -e "$indent""set argv [list -fmax $fmax]\n""$indent""set argc 2\n""$orig\n""$indent""unset argv\n""$indent""unset argc"`
+	if [[ -z `cat $file | grep call_script_as_function` ]]
+	then
+		new=`echo -e "$indent""set argv [list -fmax $fmax]\n""$indent""set argc 2\n""$orig\n""$indent""unset argv\n""$indent""unset argc"`
+	else
+		cut=`echo $orig | cut -d " " -f 2`
+		new=`echo -e "$indent""call_script_as_function $cut -fmax $fmax"`
+	fi
 	new_fix=$(printf '%s\n' "$new" | sed 's:[\/&]:\\&:g;$!s/$/\\/')
 
 	sed -i "s/$orig_fix/$new_fix/" $file
