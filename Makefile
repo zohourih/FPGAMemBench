@@ -15,7 +15,6 @@ ifeq ($(INTEL_FPGA),1)
 	endif
 	AOC_VERSION = $(shell aoc --version | grep Build | cut -c 9-10)
 	LEGACY = $(shell echo $(AOC_VERSION)\<17 | bc)
-	RTL = $(shell echo $(AOC_VERSION)\>=18 | bc)
 
 	INC = $(shell aocl compile-config)
 	LIB = $(shell aocl link-config) -lOpenCL
@@ -28,18 +27,7 @@ ifeq ($(INTEL_FPGA),1)
 		DASH = -
 		SPACE = =
 	endif
-	ifeq ($(RTL),1)
-		ifeq ($(AOC_PRO),1)
-			SWITCH = -rtl
-			EXT = aocr
-		else
-			SWITCH = -c
-			EXT = aoco
-		endif
-	else
-		SWITCH = -c
-		EXT = aoco
-	endif
+
 	KERNEL_FLAGS = -v $(DASH)report
 
 	ifeq ($(LEGACY),1)
@@ -149,48 +137,38 @@ fpga-stream: $(HOST_FILE)
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
 
 %.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG)
-#To bypass the auto conversion of "-" to "_" in AOC_VERSION < 17
-%.aocx: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 %.aocx: %.cl
 	mkdir -p $(FOLDER)
 	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL).aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) $(SWITCH) && \
-	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY_ALTER) $(FMAX) && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).$(EXT) && \
-	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
-	mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && rm -rf $(KERNEL_BINARY_ALTER).aoc* && \
+	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY) $(FMAX) & \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY) && \
+	rm -rf $(KERNEL_BINARY).aoc* && \
 	cd ..
 
 fpga_1: KERNEL_FLAGS += -DFPGA_1
 fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1
-fpga_1: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_1: $(KERNEL)-sch.cl
 	mkdir -p $(FOLDER)
 	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_1.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) $(SWITCH) && \
-	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY_ALTER) $(FMAX) && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).$(EXT) && \
-	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
-	mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && rm -rf $(KERNEL_BINARY_ALTER).aoc* && \
+	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY) $(FMAX) & \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY) && \
+	rm -rf $(KERNEL_BINARY).aoc* && \
 	cd ..
 
 fpga_2: KERNEL_FLAGS += -DFPGA_2
 fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2
-fpga_2: KERNEL_BINARY_ALTER = $(shell echo -n $(KERNEL_BINARY) | sed 's/fpga-stream-kernel-/fpga_stream_kernel_/' | sed 's/ //g')
 fpga_2: $(KERNEL)-sch.cl
 	mkdir -p $(FOLDER)
 	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_2.aocx
 	cd $(FOLDER) && \
 	rm -rf $(KERNEL_BINARY)* && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY_ALTER) $(SWITCH) && \
-	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY_ALTER) $(FMAX) && \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(KERNEL_BINARY_ALTER).$(EXT) && \
-	mv $(KERNEL_BINARY_ALTER) $(KERNEL_BINARY) && \
-	mv $(KERNEL_BINARY_ALTER).aocx $(KERNEL_BINARY).aocx && rm -rf $(KERNEL_BINARY_ALTER).aoc* && \
+	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY) $(FMAX) & \
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY) && \
+	rm -rf $(KERNEL_BINARY).aoc* && \
 	cd ..
 
 clean:
