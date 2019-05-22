@@ -17,9 +17,9 @@ else
 	fmax=$2
 fi
 
-if [[ $skip -eq 0 ]]
+( if [[ $skip -eq 0 ]]
 then
-	(if [[ -z `quartus_fit --version | grep "Pro"` ]]
+	if [[ -z `quartus_fit --version | grep "Pro"` ]]
 	then
 		file=`echo $path/scripts/post_flow.tcl`
 	else
@@ -55,5 +55,5 @@ then
 	new_fix=$(printf '%s\n' "$new" | sed 's:[\/&]:\\&:g;$!s/$/\\/')
 
 	sed -i "s/$orig_fix/$new_fix/" $file
-	echo "Overriding Fmax: SUCCESS!!") &
-fi
+	echo "Overriding Fmax: SUCCESS!!"
+fi ) &

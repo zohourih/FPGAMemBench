@@ -143,7 +143,7 @@ fpga-stream: $(HOST_FILE)
 	rm -rf $(FOLDER)/$(KERNEL_BINARY)*
 	sh $(SRC_FOLDER)/override_fmax.sh $(FOLDER)/$(KERNEL_BINARY) $(FMAX)
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(FOLDER)/$(KERNEL_BINARY)
-	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoc*
+	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoco $(FOLDER)/$(KERNEL_BINARY).aocr
 
 fpga_1: KERNEL_FLAGS += -DFPGA_1
 fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1
@@ -153,7 +153,7 @@ fpga_1: $(KERNEL)-sch.cl
 	rm -rf $(FOLDER)/$(KERNEL_BINARY)*
 	sh $(SRC_FOLDER)/override_fmax.sh $(FOLDER)/$(KERNEL_BINARY) $(FMAX)
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(FOLDER)/$(KERNEL_BINARY)
-	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoc*
+	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoco $(FOLDER)/$(KERNEL_BINARY).aocr
 
 fpga_2: KERNEL_FLAGS += -DFPGA_2
 fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2
@@ -163,7 +163,7 @@ fpga_2: $(KERNEL)-sch.cl
 	rm -rf $(FOLDER)/$(KERNEL_BINARY)*
 	sh $(SRC_FOLDER)/override_fmax.sh $(FOLDER)/$(KERNEL_BINARY) $(FMAX)
 	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(FOLDER)/$(KERNEL_BINARY)
-	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoc*
+	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoco $(FOLDER)/$(KERNEL_BINARY).aocr
 
 clean:
 	rm -f $(HOST_BINARY)
