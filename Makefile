@@ -140,36 +140,30 @@ fpga-stream: $(HOST_FILE)
 %.aocx: %.cl
 	mkdir -p $(FOLDER)
 	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL).aocx
-	cd $(FOLDER) && \
-	rm -rf $(KERNEL_BINARY)* && \
-	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY) $(FMAX) & \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY) && \
-	rm -rf $(KERNEL_BINARY).aoc* && \
-	cd ..
+	rm -rf $(FOLDER)/$(KERNEL_BINARY)*
+	sh $(SRC_FOLDER)/override_fmax.sh $(FOLDER)/$(KERNEL_BINARY) $(FMAX)
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(FOLDER)/$(KERNEL_BINARY)
+	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoc*
 
 fpga_1: KERNEL_FLAGS += -DFPGA_1
 fpga_1: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_1
 fpga_1: $(KERNEL)-sch.cl
 	mkdir -p $(FOLDER)
 	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_1.aocx
-	cd $(FOLDER) && \
-	rm -rf $(KERNEL_BINARY)* && \
-	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY) $(FMAX) & \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY) && \
-	rm -rf $(KERNEL_BINARY).aoc* && \
-	cd ..
+	rm -rf $(FOLDER)/$(KERNEL_BINARY)*
+	sh $(SRC_FOLDER)/override_fmax.sh $(FOLDER)/$(KERNEL_BINARY) $(FMAX)
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(FOLDER)/$(KERNEL_BINARY)
+	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoc*
 
 fpga_2: KERNEL_FLAGS += -DFPGA_2
 fpga_2: KERNEL_BINARY = $(KERNEL)-sch_$(KERNEL_CONFIG)$(EXTRA_CONFIG)_FPGA_2
 fpga_2: $(KERNEL)-sch.cl
 	mkdir -p $(FOLDER)
 	-ln -sfn $(FOLDER)/$(KERNEL_BINARY).aocx $(KERNEL)_FPGA_2.aocx
-	cd $(FOLDER) && \
-	rm -rf $(KERNEL_BINARY)* && \
-	sh $(SRC_FOLDER)/override_fmax.sh $(KERNEL_BINARY) $(FMAX) & \
-	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(KERNEL_BINARY) && \
-	rm -rf $(KERNEL_BINARY).aoc* && \
-	cd ..
+	rm -rf $(FOLDER)/$(KERNEL_BINARY)*
+	sh $(SRC_FOLDER)/override_fmax.sh $(FOLDER)/$(KERNEL_BINARY) $(FMAX)
+	$(KERNEL_COMPILER) $(KERNEL_FLAGS) $(SRC_FOLDER)/$< -o $(FOLDER)/$(KERNEL_BINARY)
+	rm -rf $(FOLDER)/$(KERNEL_BINARY).aoc*
 
 clean:
 	rm -f $(HOST_BINARY)
