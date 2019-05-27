@@ -424,7 +424,7 @@ int main(int argc, char **argv)
 	
 #ifdef NDR
 	#if defined(STD) || defined(BLK2D)
-	printf("Work-group\Block size: %d\n", BSIZE);
+	printf("Work-group\\Block size: %d\n", BSIZE);
 	#else
 	printf("Work-group size:       %d\n", WGS);
 	#endif
