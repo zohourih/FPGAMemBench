@@ -12,8 +12,8 @@ version=`aoc --version | grep Build | cut -d " " -f 2`
 folder=`echo "$board"_"$version"`
 verify=""
 pad_end=0
-overlap=8
-halo=4
+overlap=0
+halo=0
 overlap_switch=""
 if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]]
 then
@@ -31,6 +31,7 @@ echo "Interleave" | xargs printf "%-12s"
 echo "Vector" | xargs printf "%-8s"
 echo "Frequency" | xargs printf "%-12s"
 echo "Padding" | xargs printf "%-10s"
+echo "Halo\\\\Overlap" | xargs printf "%-15s"
 echo "Copy\ (GiB/s)" | xargs printf "%-15s"
 echo "MAC\ (GiB/s)" | xargs printf "%-15s"
 echo
@@ -94,6 +95,15 @@ do
 		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
 		copy_ver=`echo "$out" | grep Verify | grep Copy | cut -d " " -f 4 | cut -c 1-1`
 		mac_ver=`echo "$out" | grep Verify | grep MAC | cut -d " " -f 4 | cut -c 1-1`
+		if [[ -n `echo "$out" | grep Halo` ]]
+		then
+			halo_overlap=`echo "$out" | grep "Halo" | tr -s " " | cut -d " " -f 3`
+		elif [[ -n `echo "$out" | grep Overlap` ]]
+		then
+			halo_overlap=`echo "$out" | grep "Overlap" | tr -s " " | cut -d " " -f 2`
+		else
+			halo_overlap="N/A"
+		fi
 
 		echo $type  | tr '[:lower:]' '[:upper:]' | xargs printf "%-8s"
 		echo $model | xargs printf "%-8s"
@@ -102,6 +112,7 @@ do
 		echo $VEC | xargs printf "%-8s"
 		echo $freq | xargs printf "%-12s"
 		echo $pad | xargs printf "%-10s"
+		echo $halo_overlap | xargs printf "%-15s"
 		if [[ "$verify" == "--verify" ]]
 		then
 			echo "$copy\ ($copy_ver)" | xargs printf "%-15s"
