@@ -2,7 +2,7 @@
 
 export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
-iter=5
+iter=10
 size=768
 row=24576
 col=8192
@@ -66,11 +66,11 @@ do
 
 	if [[ -n `echo $name | grep nointer` ]]
 	then
-		nointer=1
-		inter=N
-	else
 		nointer=0
 		inter=Y
+	else
+		nointer=1
+		inter=N
 	fi
 
 	if [[ -n `echo $name | grep nocache` ]]
