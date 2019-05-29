@@ -32,8 +32,8 @@ echo "Vector" | xargs printf "%-8s"
 echo "Frequency" | xargs printf "%-12s"
 echo "Padding" | xargs printf "%-10s"
 echo "Halo\\\\Overlap" | xargs printf "%-15s"
-echo "Copy\ (GiB/s)" | xargs printf "%-15s"
-echo "MAC\ (GiB/s)" | xargs printf "%-15s"
+echo "Copy\ (GB/s)" | xargs printf "%-15s"
+echo "MAC\ (GB/s)" | xargs printf "%-15s"
 echo
 
 for i in `ls $folder | grep aocx | sort -V`
