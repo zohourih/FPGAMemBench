@@ -527,7 +527,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &overlap   ) );
 	#else
-		int loop_exit = BSIZE * num_blk / VEC;
+		int loop_exit = (BSIZE / VEC) * num_blk;
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
@@ -571,7 +571,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &cols      ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
-		int loop_exit = BSIZE * num_blk * rows / VEC;
+		int loop_exit = (BSIZE / VEC) * num_blk * rows;
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
@@ -795,23 +795,23 @@ int main(int argc, char **argv)
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
 	long totalSize_B = ((num_blk * BSIZE) - (exit_index + overlap - array_size)) * sizeof(float);
-	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * totalSize_B * 1000.0) / (1.0E9 * avgCopyTime), (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime));
-	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * totalSize_B * 1000.0) / (1.0E9 * avgMacTime ), (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ));
+	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgCopyTime), avgCopyTime);
+	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgMacTime ), avgMacTime);
 #elif BLK2D
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
 	long totalSize_B = ((num_blk * BSIZE) - (exit_col + 2 * halo - cols)) * rows * sizeof(float);
-	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * totalSize_B * 1000.0) / (1.0E9 * avgCopyTime), (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime));
-	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * totalSize_B * 1000.0) / (1.0E9 * avgMacTime ), (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ));
+	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgCopyTime), avgCopyTime);
+	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgMacTime ), avgMacTime);
 #elif SCH
 	avgCopyTime = totalCopyTime / (double)iter;
-	printf("Channel bandwidth: %.3f GiB/s (%.3f GB/s)\n", (double)(size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(size_B) / (1.0E6 * avgCopyTime));
-	printf("Memory bandwidth : %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * size_B) / (1.0E6 * avgCopyTime));
+	printf("Channel bandwidth: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(1 * size_B) / (1.0E6 * avgCopyTime), (double)(1 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), avgCopyTime);
+	printf("Memory bandwidth : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * size_B) / (1.0E6 * avgCopyTime), (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), avgCopyTime);
 #else
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	printf("Copy: %.3f GiB/s (%.3f GB/s)\n", (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), (double)(2 * size_B) / (1.0E6 * avgCopyTime));
-	printf("MAC : %.3f GiB/s (%.3f GB/s)\n", (double)(3 * size_MiB * 1000.0) / (1024.0 * avgMacTime ), (double)(3 * size_B) / (1.0E6 * avgMacTime ));
+	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * size_B) / (1.0E6 * avgCopyTime), (double)(2 * size_MiB * 1000.0) / (1024.0 * avgCopyTime), avgCopyTime);
+	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * size_B) / (1.0E6 * avgMacTime ), (double)(3 * size_MiB * 1000.0) / (1024.0 * avgMacTime ), avgMacTime );
 #endif
 
 #if defined(STD) || defined(BLK2D)
