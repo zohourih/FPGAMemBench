@@ -66,11 +66,11 @@ do
 
 	if [[ -n `echo $name | grep nointer` ]]
 	then
-		nointer=0
-		inter=Y
-	else
 		nointer=1
 		inter=N
+	else
+		nointer=0
+		inter=Y
 	fi
 
 	if [[ -n `echo $name | grep nocache` ]]
