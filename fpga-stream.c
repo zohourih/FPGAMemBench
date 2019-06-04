@@ -25,7 +25,7 @@
 	#define MEM_BANK_2 CL_CHANNEL_2_INTELFPGA
 #endif
 
-#ifdef BLK2D
+#if defined(BLK2D) || defined(CHBLK2D)
 	#define DIM 2
 #else
 	#define DIM 1
@@ -35,7 +35,7 @@
 static cl_context       context;
 #if defined(STD) || defined(BLK2D)
 static cl_command_queue queue;
-#elif defined(CH) || defined(SCH)
+#elif defined(CH) || defined(SCH) || defined(CHBLK2D)
 static cl_command_queue queue_read, queue_write;
 #endif
 static cl_device_id*    deviceList;
@@ -91,7 +91,7 @@ static inline void init()
 		display_error_message(error, stdout);
 		exit(-1);
 	}
-#elif CH
+#elif defined(CH) || defined(CHBLK2D)
 	queue_read = clCreateCommandQueue(context, deviceList[0], 0, NULL);
 	if(!queue_read)
 	{
@@ -134,7 +134,7 @@ static inline void usage(char **argv)
 {
 #ifdef STD
 	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> -o <number of overlapped indexes> --verbose --verify\n", argv[0]);
-#elif BLK2D
+#elif defined(BLK2D) || defined(CHBLK2D)
 	printf("\nUsage: %s -r <row width> -c <column height> -n <number of iterations> -p <number of padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
 #else
 	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -p <number of padding indexes> --verbose --verify\n", argv[0]);
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 	int verbose = 0, verify = 0;
 #ifdef STD
 	int overlap = 0;
-#elif BLK2D
+#elif defined(BLK2D) || defined(CHBLK2D)
 	int halo = 0;
 	int rows = 5120;
 	int cols = 5120;
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 	int arg = 1;
 	while (arg < argc)
 	{
-	#ifndef BLK2D
+	#if !defined(BLK2D) && !defined(CHBLK2D)
 		if(strcmp(argv[arg], "-s") == 0)
 		{
 			size_MiB = atoi(argv[arg + 1]);
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 			overlap = atoi(argv[arg + 1]);
 			arg += 2;
 		}
-	#elif BLK2D
+	#elif defined(BLK2D) || defined(CHBLK2D)
 		else if (strcmp(argv[arg], "-hw") == 0)
 		{
 			halo = atoi(argv[arg + 1]);
@@ -234,10 +234,12 @@ int main(int argc, char **argv)
 	}
 
 	// set array size based in input buffer size, default is 256k floats (= 100 MiB)
-#ifdef BLK2D
-	size_MiB = rows * cols * sizeof(float) / (1024 * 1024);
-#endif
+#if defined(BLK2D) || defined(CHBLK2D)
+	size_MiB = (rows * cols * sizeof(float)) / (1024 * 1024);
+	long size_B = rows * cols * sizeof(float);
+#else
 	long size_B = (long)size_MiB * 1024 * 1024;
+#endif
 	long array_size = size_B / sizeof(float);
 	long padded_array_size = array_size + pad;
 	long padded_size_Byte = padded_array_size * sizeof(float);
@@ -338,7 +340,7 @@ int main(int argc, char **argv)
 	}
 
 	clReleaseProgram(prog);
-#elif CH
+#elif defined(CH) || defined(CHBLK2D)
 	cl_kernel copyReadKernel, copyWriteKernel, macReadKernel, macWriteKernel;
 
 	copyReadKernel = clCreateKernel(prog, "copy_read", &error);
@@ -349,7 +351,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	copyWriteKernel = clCreateKernel(prog, "copy_write", &error);
+	copyWriteKernel= clCreateKernel(prog, "copy_write", &error);
 	if(error != CL_SUCCESS)
 	{
 		printf("ERROR: clCreateKernel(copy_write) failed with error: ");
@@ -385,7 +387,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	copyWriteKernel = clCreateKernel(progFPGA2, "copy_write", &error);
+	copyWriteKernel= clCreateKernel(progFPGA2, "copy_write", &error);
 	if(error != CL_SUCCESS)
 	{
 		printf("ERROR: clCreateKernel(copy_write) failed with error: ");
@@ -403,6 +405,8 @@ int main(int argc, char **argv)
 	printf("Kernel type:           Channelized\n");
 #elif BLK2D
 	printf("Kernel type:           2D overlapped blocking\n");
+#elif CHBLK2D
+	printf("Kernel type:           Channelized 2D overlapped blocking\n");
 #elif SCH
 	printf("Kernel type:           Nallatech 510T serial channel\n");
 #endif
@@ -413,7 +417,7 @@ int main(int argc, char **argv)
 	printf("Kernel model:          Single Work-item\n");
 #endif
 
-#ifdef BLK2D
+#if defined(BLK2D) || defined(CHBLK2D)
 	printf("Row size:              %d indexes\n", rows);
 	printf("Column size:           %d indexes\n", cols);
 #endif
@@ -423,13 +427,13 @@ int main(int argc, char **argv)
 	printf("Total memory usage:    %d MiB\n", 3 * size_MiB);
 	
 #ifdef NDR
-	#if defined(STD) || defined(BLK2D)
+	#if defined(STD) || defined(BLK2D) || defined(CHBLK2D)
 	printf("Work-group\\Block size: %d\n", BSIZE);
 	#else
 	printf("Work-group size:       %d\n", WGS);
 	#endif
 #else
-	#if defined(STD) || defined(BLK2D)
+	#if defined(STD) || defined(BLK2D) || defined(CHBLK2D)
 	printf("Block size:            %d\n", BSIZE);
 	#endif
 #endif
@@ -439,7 +443,7 @@ int main(int argc, char **argv)
 #ifdef STD
 	printf("Padding:               %d\n", pad);
 	printf("Overlap:               %d\n\n", overlap);
-#elif BLK2D
+#elif defined(BLK2D) || defined(CHBLK2D)
 	printf("Padding:               %d\n", pad);
 	printf("Halo width:            %d\n\n", halo);
 #else
@@ -489,7 +493,7 @@ int main(int argc, char **argv)
 #if defined(STD) || defined(BLK2D)
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_size_Byte, hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_size_Byte, hostB, 0, 0, 0));
-#elif CH
+#elif defined(CH) || defined(CHBLK2D)
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_size_Byte, hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceB, 1, 0, padded_size_Byte, hostB, 0, 0, 0));
 #elif SCH
@@ -545,6 +549,40 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &overlap   ) );
 	#endif
+#elif CH
+	#ifdef NDR
+		// set local and global work size
+		size_t localSize[3] = {(size_t)WGS, 1, 1};
+		size_t globalSize[3] = {(size_t)(array_size / VEC), 1, 1};
+
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
+	#else
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
+
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_long ), (void*) &array_size) );
+	#endif
 #elif BLK2D
 	int valid_blk  = BSIZE - 2 * halo;
 	int exit_col = (cols % valid_blk == 0) ? cols : cols + valid_blk - (cols % valid_blk);
@@ -591,39 +629,67 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 7, sizeof(cl_int  ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 8, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
-#elif CH
+#elif CHBLK2D
+	int valid_blk  = BSIZE - 2 * halo;
+	int exit_col = (cols % valid_blk == 0) ? cols : cols + valid_blk - (cols % valid_blk);
+	int num_blk = exit_col / valid_blk;
+
 	#ifdef NDR
+		int total_cols = (BSIZE / VEC) * num_blk;
+
 		// set local and global work size
-		size_t localSize[3] = {(size_t)WGS, 1, 1};
-		size_t globalSize[3] = {(size_t)(array_size / VEC), 1, 1};
+		size_t localSize[3] = {(size_t)(BSIZE / VEC), 1, 1};
+		size_t globalSize[3] = {(size_t)total_cols, (size_t)rows, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 3, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 3, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 4, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
+		int loop_exit = (BSIZE / VEC) * num_blk * rows;
+
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 3, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 4, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 5, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 3, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 4, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 5, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 4, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 5, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 6, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &rows      ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &cols      ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 5, sizeof(cl_int  ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
 #elif SCH
 	#ifdef NDR
@@ -650,10 +716,10 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif defined(CH) || defined(SCH)
+#elif defined(CH) || defined(SCH) || defined(CHBLK2D)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
 		CL_SAFE_CALL( clEnqueueTask(queue_read , copyReadKernel , 0, NULL, NULL) );
 		CL_SAFE_CALL( clEnqueueTask(queue_write, copyWriteKernel, 0, NULL, NULL) );
@@ -674,10 +740,10 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, copyKernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif defined(CH) || defined(SCH)
+#elif defined(CH) || defined(SCH) || defined(CHBLK2D)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , copyReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, copyWriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
 		CL_SAFE_CALL( clEnqueueTask(queue_read , copyReadKernel , 0, NULL, NULL) );
 		CL_SAFE_CALL( clEnqueueTask(queue_write, copyWriteKernel, 0, NULL, NULL) );
@@ -697,7 +763,7 @@ int main(int argc, char **argv)
 	#if defined(STD) || defined(BLK2D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue);
-	#elif defined (CH) || defined(SCH)
+	#elif defined (CH) || defined(SCH) || defined(CHBLK2D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
@@ -738,10 +804,10 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, macKernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif CH
+#elif defined(CH) || defined(CHBLK2D)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , macReadKernel , 1, NULL, globalSize, localSize, 0, 0, NULL) );
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, macWriteKernel, 1, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , macReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, macWriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
 		CL_SAFE_CALL( clEnqueueTask(queue_read , macReadKernel , 0, NULL, NULL) );
 		CL_SAFE_CALL( clEnqueueTask(queue_write, macWriteKernel, 0, NULL, NULL) );
@@ -761,7 +827,7 @@ int main(int argc, char **argv)
 	#if defined(STD) || defined(BLK2D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue);
-	#elif CH
+	#elif defined(CH) || defined(CHBLK2D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
@@ -797,7 +863,7 @@ int main(int argc, char **argv)
 	long totalSize_B = ((num_blk * BSIZE) - (exit_index + overlap - array_size)) * sizeof(float);
 	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgCopyTime), avgCopyTime);
 	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgMacTime ), avgMacTime);
-#elif BLK2D
+#elif defined(BLK2D) || defined(CHBLK2D)
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
 	long totalSize_B = ((num_blk * BSIZE) - (exit_col + 2 * halo - cols)) * rows * sizeof(float);
@@ -816,7 +882,7 @@ int main(int argc, char **argv)
 
 #if defined(STD) || defined(BLK2D)
 	clReleaseCommandQueue(queue);
-#elif defined(CH) || defined(SCH)
+#elif defined(CH) || defined(SCH) || defined(CHBLK2D)
 	clReleaseCommandQueue(queue_read);
 	clReleaseCommandQueue(queue_write);
 #endif
