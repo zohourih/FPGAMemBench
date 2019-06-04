@@ -235,8 +235,8 @@ int main(int argc, char **argv)
 
 	// set array size based in input buffer size, default is 256k floats (= 100 MiB)
 #if defined(BLK2D) || defined(CHBLK2D)
-	size_MiB = (rows * cols * sizeof(float)) / (1024 * 1024);
-	long size_B = rows * cols * sizeof(float);
+	size_MiB = ((long)rows * (long)cols * sizeof(float)) / (1024 * 1024);
+	long size_B = (long)rows * (long)cols * sizeof(float);
 #else
 	long size_B = (long)size_MiB * 1024 * 1024;
 #endif
