@@ -45,7 +45,7 @@ do
 	then
 		overlap_switch="-o $overlap"
 		size_switch="-s $size"
-	elif [[ "$type" == "blk2d" ]]
+	elif [[ "$type" == "blk2d" ]] || [[ "$type" == "chblk2d" ]]
 	then
 		overlap_switch="-hw $halo"
 		size_switch="-r $row -c $col"
