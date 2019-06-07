@@ -10,10 +10,12 @@ size_switch=""
 board=de5net
 if [[ "$board" == "de5net" ]]
 then
-	bw="25.6"
+	max_bw="25.6"
+	mem_freg="1600"
 elif [[ "$board" == "p385a" ]]
 then
-	bw="34.128"
+	max_bw="34.128"
+	mem_freg="2133"
 fi
 version=`aoc --version | grep Build | cut -d " " -f 2`
 folder=`echo "$board"_"$version"`
@@ -42,8 +44,8 @@ echo "Pad" | xargs printf "%-6s"
 echo "Overlap" | xargs printf "%-10s"
 echo "Copy\ (GB/s)" | xargs printf "%-14s"
 echo "MAC\ (GB/s)" | xargs printf "%-13s"
-echo "Copy\ (%)" | xargs printf "%-11s"
-echo "MAC\ (%)" | xargs printf "%-7s"
+echo "Copy\ Eff." | xargs printf "%-12s"
+echo "MAC\ Eff." | xargs printf "%-8s"
 echo
 
 for i in `ls $folder | grep aocx | sort -V`
@@ -105,8 +107,18 @@ do
 		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
 		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
 
-		copy_percent=`echo "100 * ($copy/$bw)" | bc -l | xargs printf %0.1f`
-		mac_percent=`echo "100 * ($mac/$bw)" | bc -l | xargs printf %0.1f`
+		bw_copy=`echo "$freq * $VEC * 4 * 2 / 1000" | bc -l | xargs printf %0.3f`
+		if [[ `echo "$bw_copy > $max_bw" | bc -l` -eq 1 ]]
+		then
+			bw_copy=$max_bw
+		fi
+		bw_mac=`echo "$freq * $VEC * 4 * 3 / 1000" | bc -l | xargs printf %0.3f`
+		if [[ `echo "$bw_mac > $max_bw" | bc -l` -eq 1 ]]
+		then
+			bw_mac=$max_bw
+		fi
+		copy_eff=`echo "100 * ($copy/$bw_copy)" | bc -l | xargs printf %0.1f`
+		mac_eff=`echo "100 * ($mac/$bw_mac)" | bc -l | xargs printf %0.1f`
 
 		copy_ver=`echo "$out" | grep Verify | grep Copy | cut -d " " -f 4 | cut -c 1-1`
 		mac_ver=`echo "$out" | grep Verify | grep MAC | cut -d " " -f 4 | cut -c 1-1`
@@ -137,8 +149,8 @@ do
 			echo $copy | xargs printf "%-14s"
 			echo $mac | xargs printf "%-13s"
 		fi
-		echo "$copy_percent%" | xargs printf "%-11s"
-		echo "$mac_percent%" | xargs printf "%-7s"
+		echo "$copy_eff%" | xargs printf "%-12s"
+		echo "$mac_eff%" | xargs printf "%-8s"
 		echo
 	done
 done
