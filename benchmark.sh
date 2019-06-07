@@ -8,9 +8,17 @@ row=24576
 col=8192
 size_switch=""
 board=de5net
+if [[ "$board" == "de5net" ]]
+then
+	bw="25.6"
+elif [[ "$board" == "p385a" ]]
+then
+	bw="34.128"
+fi
 version=`aoc --version | grep Build | cut -d " " -f 2`
 folder=`echo "$board"_"$version"`
 verify=""
+pad_start=0
 pad_end=0
 overlap=0
 halo=0
@@ -24,16 +32,18 @@ then
 	pad_end=16
 fi
 
-echo "Type" | xargs printf "%-8s"
+echo "Type" | xargs printf "%-9s"
 echo "Model" | xargs printf "%-8s"
 echo "Cache" | xargs printf "%-8s"
-echo "Interleave" | xargs printf "%-12s"
-echo "Vector" | xargs printf "%-8s"
-echo "Frequency" | xargs printf "%-12s"
-echo "Padding" | xargs printf "%-10s"
-echo "Halo\\\\Overlap" | xargs printf "%-15s"
-echo "Copy\ (GB/s)" | xargs printf "%-15s"
-echo "MAC\ (GB/s)" | xargs printf "%-15s"
+echo "Inter." | xargs printf "%-9s"
+echo "Vector" | xargs printf "%-9s"
+echo "Freq." | xargs printf "%-9s"
+echo "Pad" | xargs printf "%-6s"
+echo "Overlap" | xargs printf "%-10s"
+echo "Copy\ (GB/s)" | xargs printf "%-14s"
+echo "MAC\ (GB/s)" | xargs printf "%-13s"
+echo "Copy\ (%)" | xargs printf "%-11s"
+echo "MAC\ (%)" | xargs printf "%-7s"
 echo
 
 for i in `ls $folder | grep aocx | sort -V`
@@ -87,14 +97,20 @@ do
 	ln -s "$folder/$i" fpga-stream-kernel.aocx
 	aocl program acl0 fpga-stream-kernel.aocx >/dev/null 2>&1
 
-	for ((pad = 0 ; pad <= $pad_end ; pad++))
+	for ((pad = $pad_start ; pad <= $pad_end ; pad++))
 	do
 		out=`DEVICE_TYPE=FPGA ./fpga-stream $size_switch -n $iter -p $pad $overlap_switch $verify 2>&1`
 		#echo "$out" >> ast.txt
+
 		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
 		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
+
+		copy_percent=`echo "100 * ($copy/$bw)" | bc -l | xargs printf %0.1f`
+		mac_percent=`echo "100 * ($mac/$bw)" | bc -l | xargs printf %0.1f`
+
 		copy_ver=`echo "$out" | grep Verify | grep Copy | cut -d " " -f 4 | cut -c 1-1`
 		mac_ver=`echo "$out" | grep Verify | grep MAC | cut -d " " -f 4 | cut -c 1-1`
+
 		if [[ -n `echo "$out" | grep Halo` ]]
 		then
 			halo_overlap=`echo "$out" | grep "Halo" | tr -s " " | cut -d " " -f 3`
@@ -105,22 +121,24 @@ do
 			halo_overlap="N/A"
 		fi
 
-		echo $type  | tr '[:lower:]' '[:upper:]' | xargs printf "%-8s"
+		echo $type  | tr '[:lower:]' '[:upper:]' | xargs printf "%-9s"
 		echo $model | xargs printf "%-8s"
 		echo $cache | xargs printf "%-8s"
-		echo $inter | xargs printf "%-12s"
-		echo $VEC | xargs printf "%-8s"
-		echo $freq | xargs printf "%-12s"
-		echo $pad | xargs printf "%-10s"
-		echo $halo_overlap | xargs printf "%-15s"
+		echo $inter | xargs printf "%-9s"
+		echo $VEC | xargs printf "%-9s"
+		echo $freq | xargs printf "%-9s"
+		echo $pad | xargs printf "%-6s"
+		echo $halo_overlap | xargs printf "%-10s"
 		if [[ "$verify" == "--verify" ]]
 		then
 			echo "$copy\ ($copy_ver)" | xargs printf "%-15s"
 			echo "$mac\ ($mac_ver)" | xargs printf "%-15s"
 		else
-			echo $copy | xargs printf "%-15s"
-			echo $mac | xargs printf "%-15s"
+			echo $copy | xargs printf "%-14s"
+			echo $mac | xargs printf "%-13s"
 		fi
+		echo "$copy_percent%" | xargs printf "%-11s"
+		echo "$mac_percent%" | xargs printf "%-7s"
 		echo
 	done
 done
