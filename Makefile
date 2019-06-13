@@ -7,12 +7,6 @@ HOST_FLAGS = -O3 -Wall -Wextra -lrt -fopenmp
 SRC_FOLDER = $(shell pwd)
 
 ifeq ($(INTEL_FPGA),1)
-	TEMP = $(shell quartus_fit --version | grep "Pro")
-	ifeq ($(TEMP),)
-		AOC_PRO = 0
-	else
-		AOC_PRO = 1
-	endif
 	AOC_VERSION = $(shell aoc --version | grep Build | cut -c 9-10)
 	LEGACY = $(shell echo $(AOC_VERSION)\<17 | bc)
 
