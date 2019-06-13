@@ -4,11 +4,11 @@
 //====================================================================================================================================
 
 #ifdef LEGACY
-	#pragma OPENCL EXTENSION cl_altera_channels : enable;
+	#pragma OPENCL EXTENSION cl_altera_channels : enable
 	#define read_channel read_channel_altera
 	#define write_channel write_channel_altera
 #else
-	#pragma OPENCL EXTENSION cl_intel_channels : enable;
+	#pragma OPENCL EXTENSION cl_intel_channels : enable
 	#define read_channel read_channel_intel
 	#define write_channel write_channel_intel
 #endif
