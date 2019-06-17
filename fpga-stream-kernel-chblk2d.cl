@@ -26,11 +26,11 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 
 __kernel void copy_read(__global const float* restrict a, const int pad, const int cols, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gid = get_group_id(0);
 	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
-	int gx = bx + x * VEC - halo;
+	int gx = bx + x - halo;
 	CHAN_WIDTH temp;
 
 	#pragma unroll
@@ -49,11 +49,11 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 
 __kernel void copy_write(__global float* restrict c, const int pad, const int cols, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gid = get_group_id(0);
 	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
-	int gx = bx + x * VEC - halo;
+	int gx = bx + x - halo;
 	CHAN_WIDTH temp;
 
 	temp = read_channel(ch_copy);
@@ -72,11 +72,11 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int co
 
 __kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int cols, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gid = get_group_id(0);
 	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
-	int gx = bx + x * VEC - halo;
+	int gx = bx + x - halo;
 	CHAN_WIDTH temp_a, temp_b;
 
 	#pragma unroll
@@ -97,11 +97,11 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 
 __kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int cols, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gid = get_group_id(0);
 	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
-	int gx = bx + x * VEC - halo;
+	int gx = bx + x - halo;
 	CHAN_WIDTH temp_a, temp_b;
 
 	temp_a = read_channel(ch_mac_a);
