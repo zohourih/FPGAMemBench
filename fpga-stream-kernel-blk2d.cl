@@ -52,6 +52,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 		cond++;
 
 		int gx = bx + x - halo;
+
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
@@ -92,6 +93,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 		cond++;
 
 		int gx = bx + x - halo;
+
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
