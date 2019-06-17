@@ -592,7 +592,7 @@ int main(int argc, char **argv)
 		int total_cols = BSIZE * num_blk;
 
 		// set local and global work size
-		size_t localSize[3] = {(size_t)BSIZE, 1, 1};
+		size_t localSize[3] = {(size_t)BSIZE, (size_t)rows, 1};
 		size_t globalSize[3] = {(size_t)total_cols, (size_t)rows, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
@@ -638,7 +638,7 @@ int main(int argc, char **argv)
 		int total_cols = (BSIZE / VEC) * num_blk;
 
 		// set local and global work size
-		size_t localSize[3] = {(size_t)(BSIZE / VEC), 1, 1};
+		size_t localSize[3] = {(size_t)(BSIZE / VEC), (size_t)rows, 1};
 		size_t globalSize[3] = {(size_t)total_cols, (size_t)rows, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );

@@ -24,7 +24,6 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 
 #ifdef NDR //NDRange kernels
 
-__attribute__((reqd_work_group_size(BSIZE / VEC, 1, 1)))
 __kernel void copy_read(__global const float* restrict a, const int pad, const int cols, const int halo)
 {
 	int x = get_local_id(0);
@@ -48,7 +47,6 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 	write_channel(ch_copy, temp);
 }
 
-__attribute__((reqd_work_group_size(BSIZE / VEC, 1, 1)))
 __kernel void copy_write(__global float* restrict c, const int pad, const int cols, const int halo)
 {
 	int x = get_local_id(0);
@@ -72,7 +70,6 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int co
 	}
 }
 
-__attribute__((reqd_work_group_size(BSIZE / VEC, 1, 1)))
 __kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int cols, const int halo)
 {
 	int x = get_local_id(0);
@@ -98,7 +95,6 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 	write_channel(ch_mac_b, temp_b);
 }
 
-__attribute__((reqd_work_group_size(BSIZE / VEC, 1, 1)))
 __kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int cols, const int halo)
 {
 	int x = get_local_id(0);

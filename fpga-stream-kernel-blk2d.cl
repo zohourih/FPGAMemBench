@@ -5,7 +5,6 @@
 
 #ifdef NDR //NDRange kernels
 
-__attribute__((reqd_work_group_size(BSIZE, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
 __kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int cols, const int halo)
 {
@@ -22,7 +21,6 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	}
 }
 
-__attribute__((reqd_work_group_size(BSIZE, 1, 1)))
 __attribute__((num_simd_work_items(VEC)))
 __kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int cols, const int halo)
 {
