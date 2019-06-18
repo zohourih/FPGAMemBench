@@ -589,10 +589,14 @@ int main(int argc, char **argv)
 	int num_blk = exit_col / valid_blk;
 
 	#ifdef NDR
-		int total_cols = BSIZE * num_blk;
+		int total_cols = (BSIZE / VEC) * num_blk;
 
 		// set local and global work size
-		size_t localSize[3] = {(size_t)BSIZE, (size_t)rows, 1};
+		#ifdef INTEL_FPGA
+			size_t localSize[3] = {(size_t)(BSIZE / VEC), (size_t)rows, 1}; // localSize[1] is set like this to ensure the same index traversal ordering as the SWI kernel
+		#else
+			size_t localSize[3] = {(size_t)(BSIZE / VEC), 1, 1}; // localSize[1] is set like this since the above case does not work on GPUs due to local work-group size limit
+		#endif
 		size_t globalSize[3] = {(size_t)total_cols, (size_t)rows, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );

@@ -5,35 +5,43 @@
 
 #ifdef NDR //NDRange kernels
 
-__attribute__((num_simd_work_items(VEC)))
 __kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int cols, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gid = get_group_id(0);
 	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
 	int gx = bx + x - halo;
 
-	if (gx >= 0 && gx < cols)
+	#pragma unroll
+	for (int j = 0; j < VEC; j++)
 	{
-		long index = y * cols + gx;
-		c[pad + index] = a[pad + index];
+		int real_x = gx + j;
+		long index = y * cols + real_x;
+		if (real_x >= 0 && real_x < cols)
+		{
+			c[pad + index] = a[pad + index];
+		}
 	}
 }
 
-__attribute__((num_simd_work_items(VEC)))
 __kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int cols, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gid = get_group_id(0);
 	int y = get_global_id(1);
 	int bx = gid * (BSIZE - 2 * halo);
 	int gx = bx + x - halo;
 
-	if (gx >= 0 && gx < cols)
+	#pragma unroll
+	for (int j = 0; j < VEC; j++)
 	{
-		long index = y * cols + gx;
-		c[pad + index] = constValue * a[pad + index] + b[pad + index];
+		int real_x = gx + j;
+		long index = y * cols + real_x;
+		if (real_x >= 0 && real_x < cols)
+		{
+			c[pad + index] = constValue * a[pad + index] + b[pad + index];
+		}
 	}
 }
 
