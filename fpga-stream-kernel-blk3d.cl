@@ -5,10 +5,9 @@
 
 #ifdef NDR //NDRange kernels
 
-__attribute__((num_simd_work_items(VEC)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int rows, const int cols, const int halo)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int cols, const int rows, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
 	int y = get_global_id(1);
 	int gidy = get_group_id(1);
@@ -18,15 +17,19 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	int gx = bx + x - halo;
 	int gy = by + y - halo;
 
-	if (gx >= 0 && gy >= 0 && gx < cols && gy < rows)
+	#pragma unroll
+	for (int j = 0; j < VEC; j++)
 	{
-		long index = gx + gy * cols + z * cols * rows;
-		c[pad + index] = a[pad + index];
+		int real_x = gx + j;
+		long index = real_x + gy * cols + z * cols * rows;
+		if (real_x >= 0 && gy >= 0 && real_x < cols && gy < rows)
+		{
+			c[pad + index] = a[pad + index];
+		}
 	}
 }
 
-__attribute__((num_simd_work_items(VEC)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int rows, const int cols, const int halo)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int cols, const int rows, const int halo)
 {
 	int x = get_local_id(0);
 	int gidx = get_group_id(0);
@@ -38,17 +41,23 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 	int gx = bx + x - halo;
 	int gy = by + y - halo;
 
-	if (gx >= 0 && gy >= 0 && gx < cols && gy < rows)
+
+	#pragma unroll
+	for (int j = 0; j < VEC; j++)
 	{
-		long index = gx + gy * cols + z * cols * rows;
-		c[pad + index] = constValue * a[pad + index] + b[pad + index];
+		int real_x = gx + j;
+		long index = real_x + gy * cols + z * cols * rows;
+		if (real_x >= 0 && gy >= 0 && real_x < cols && gy < rows)
+		{
+			c[pad + index] = constValue * a[pad + index] + b[pad + index];
+		}
 	}
 }
 
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int rows, const int cols, const int planes, const int last_col, const int exit, const int halo)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int cols, const int rows, const int planes, const int last_col, const int exit, const int halo)
 {
 	int cond = 0;
 	int x = 0;
@@ -102,7 +111,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int rows, const int cols, const int planes, const int last_col, const int exit, const int halo)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int cols, const int rows, const int planes, const int last_col, const int exit, const int halo)
 {
 	int cond = 0;
 	int x = 0;
