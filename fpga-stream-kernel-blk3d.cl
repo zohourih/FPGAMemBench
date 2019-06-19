@@ -9,7 +9,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	int y = get_global_id(1);
+	int y = get_local_id(1);
 	int gidy = get_group_id(1);
 	int z = get_global_id(2);
 	int bx = gidx * (BLOCK_X - 2 * halo);
@@ -31,9 +31,9 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 
 __kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int cols, const int rows, const int halo)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	int y = get_global_id(1);
+	int y = get_local_id(1);
 	int gidy = get_group_id(1);
 	int z = get_global_id(2);
 	int bx = gidx * (BLOCK_X - 2 * halo);
@@ -80,6 +80,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 
 			if (real_x >= 0 && gy >= 0 && real_x < cols && gy < rows)
 			{
+				printf("x: %02d, y: %02d, z: %02d, index: %03ld, data: %f\n", real_x, gy, z, index, a[pad + index]);
 				c[pad + index] = a[pad + index];
 			}
 		}
