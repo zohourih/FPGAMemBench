@@ -80,7 +80,6 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 
 			if (real_x >= 0 && gy >= 0 && real_x < cols && gy < rows)
 			{
-				printf("x: %02d, y: %02d, z: %02d, index: %03ld, data: %f\n", real_x, gy, z, index, a[pad + index]);
 				c[pad + index] = a[pad + index];
 			}
 		}
