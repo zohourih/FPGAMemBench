@@ -10,8 +10,8 @@ __attribute__((num_simd_work_items(VEC)))
 __kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const int overlap)
 {
 	int x = get_local_id(0);
-	int gid = get_group_id(0);
-	long bx = gid * (BLOCK_X - overlap);
+	int gidx = get_group_id(0);
+	long bx = gidx * (BLOCK_X - overlap);
 	long index = bx + x;
 
 	if (index < size)
@@ -25,8 +25,8 @@ __attribute__((num_simd_work_items(VEC)))
 __kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const int overlap)
 {
 	int x = get_local_id(0);
-	int gid = get_group_id(0);
-	long bx = gid * (BLOCK_X - overlap);
+	int gidx = get_group_id(0);
+	long bx = gidx * (BLOCK_X - overlap);
 	long index = bx + x;
 
 	if (index < size)

@@ -5,40 +5,40 @@
 
 #ifdef NDR //NDRange kernels
 
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int cols, const int halo)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int dim_x, const int halo)
 {
 	int x = get_local_id(0) * VEC;
-	int gid = get_group_id(0);
+	int gidx = get_group_id(0);
 	int y = get_global_id(1);
-	int bx = gid * (BSIZE - 2 * halo);
+	int bx = gidx * (BSIZE - 2 * halo);
 	int gx = bx + x - halo;
 
 	#pragma unroll
 	for (int j = 0; j < VEC; j++)
 	{
 		int real_x = gx + j;
-		long index = y * cols + real_x;
-		if (real_x >= 0 && real_x < cols)
+		long index = y * dim_x + real_x;
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			c[pad + index] = a[pad + index];
 		}
 	}
 }
 
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int cols, const int halo)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int dim_x, const int halo)
 {
 	int x = get_local_id(0) * VEC;
-	int gid = get_group_id(0);
+	int gidx = get_group_id(0);
 	int y = get_global_id(1);
-	int bx = gid * (BSIZE - 2 * halo);
+	int bx = gidx * (BSIZE - 2 * halo);
 	int gx = bx + x - halo;
 
 	#pragma unroll
 	for (int j = 0; j < VEC; j++)
 	{
 		int real_x = gx + j;
-		long index = y * cols + real_x;
-		if (real_x >= 0 && real_x < cols)
+		long index = y * dim_x + real_x;
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			c[pad + index] = constValue * a[pad + index] + b[pad + index];
 		}
@@ -48,7 +48,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int rows, const int cols, const int exit, const int halo)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int dim_y, const int dim_x, const int exit, const int halo)
 {
 	int cond = 0;
 	int x = 0;
@@ -65,9 +65,9 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 		for (int j = 0; j < VEC; j++)
 		{
 			int real_x = gx + j;
-			long index = y * cols + real_x;
+			long index = y * dim_x + real_x;
 
-			if (real_x >= 0 && real_x < cols)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				c[pad + index] = a[pad + index];
 			}
@@ -79,7 +79,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 		{
 			y++;
 
-			if (y == rows)
+			if (y == dim_y)
 			{
 				y = 0;
 				bx += BSIZE - 2 * halo;
@@ -89,7 +89,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int rows, const int cols, const int exit, const int halo)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int dim_y, const int dim_x, const int exit, const int halo)
 {
 	int cond = 0;
 	int x = 0;
@@ -106,9 +106,9 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 		for (int j = 0; j < VEC; j++)
 		{
 			int real_x = gx + j;
-			long index = y * cols + real_x;
+			long index = y * dim_x + real_x;
 
-			if (real_x >= 0 && real_x < cols)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				c[pad + index] = constValue * a[pad + index] + b[pad + index];
 			}
@@ -120,7 +120,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 		{
 			y++;
 
-			if (y == rows)
+			if (y == dim_y)
 			{
 				y = 0;
 				bx += BSIZE - 2 * halo;

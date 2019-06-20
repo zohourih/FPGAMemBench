@@ -4,10 +4,10 @@ export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
 iter=10
 size=768
-row=24576
-col=8192
+dim_x=24576
+dim_y=8192
 size_switch=""
-board=de5net
+board=`aoc --list-boards | sed -n 2p | tr -d ' ' | cut -d "_" -f 1`
 if [[ "$board" == "de5net" ]]
 then
 	max_bw="25.6"
@@ -60,7 +60,7 @@ do
 	elif [[ "$type" == "blk2d" ]] || [[ "$type" == "chblk2d" ]]
 	then
 		overlap_switch="-hw $halo"
-		size_switch="-r $row -c $col"
+		size_switch="-x $dim_x -y $dim_y"
 	else
 		size_switch="-s $size"
 	fi
@@ -101,7 +101,7 @@ do
 
 	for ((pad = $pad_start ; pad <= $pad_end ; pad++))
 	do
-		out=`DEVICE_TYPE=FPGA ./fpga-stream $size_switch -n $iter -p $pad $overlap_switch $verify 2>&1`
+		out=`DEVICE_TYPE=FPGA ./fpga-stream $size_switch -n $iter -pad $pad $overlap_switch $verify 2>&1`
 		#echo "$out" >> ast.txt
 
 		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
