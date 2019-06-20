@@ -5,33 +5,41 @@
 
 #ifdef NDR //NDRange kernels
 
-__attribute__((reqd_work_group_size(BLOCK_X, 1, 1)))
-__attribute__((num_simd_work_items(VEC)))
+__attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const int overlap)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
 	long bx = gidx * (BLOCK_X - overlap);
-	long index = bx + x;
+	long gx = bx + x;
 
-	if (index < size)
-	{ 
-		c[pad + index] = a[pad + index];
+	#pragma unroll
+	for (int j = 0; j < VEC; j++)
+	{
+		long index = gx + j;
+		if (index < size)
+		{
+			c[pad + index] = a[pad + index];
+		}
 	}
 }
 
-__attribute__((reqd_work_group_size(BLOCK_X, 1, 1)))
-__attribute__((num_simd_work_items(VEC)))
+__attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const int overlap)
 {
-	int x = get_local_id(0);
+	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
 	long bx = gidx * (BLOCK_X - overlap);
-	long index = bx + x;
+	long gx = bx + x;
 
-	if (index < size)
-	{ 
-		c[pad + index] = constValue * a[pad + index] + b[pad + index];
+	#pragma unroll
+	for (int j = 0; j < VEC; j++)
+	{
+		long index = gx + j;
+		if (index < size)
+		{
+			c[pad + index] = constValue * a[pad + index] + b[pad + index];
+		}
 	}
 }
 

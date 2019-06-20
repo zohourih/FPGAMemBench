@@ -539,14 +539,14 @@ int main(int argc, char **argv)
 
 #ifdef STD
 	int valid_blk_x = BLOCK_X - overlap;
-	int exit_index = (array_size % valid_blk_x == 0) ? array_size : array_size + valid_blk_x - (array_size % valid_blk_x);
+	long exit_index = (array_size % valid_blk_x == 0) ? array_size : array_size + valid_blk_x - (array_size % valid_blk_x);
 	int num_blk_x = exit_index / valid_blk_x;
 
 	#ifdef NDR
-		int total_index = BLOCK_X * num_blk_x;
+		long total_index = (long)(BLOCK_X / VEC) * (long)num_blk_x;
 
 		// set local and global work size
-		size_t localSize[3] = {(size_t)BLOCK_X, 1, 1};
+		size_t localSize[3] = {(size_t)(BLOCK_X / VEC), 1, 1};
 		size_t globalSize[3] = {(size_t)total_index, 1, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
