@@ -18,9 +18,9 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	int gy = by + y - halo;
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		int real_x = gx + j;
+		int real_x = gx + i;
 		long index = real_x + gy * dim_x + z * dim_x * dim_y;
 		if (real_x >= 0 && gy >= 0 && real_x < dim_x && gy < dim_y)
 		{
@@ -43,9 +43,9 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		int real_x = gx + j;
+		int real_x = gx + i;
 		long index = real_x + gy * dim_x + z * dim_x * dim_y;
 		if (real_x >= 0 && gy >= 0 && real_x < dim_x && gy < dim_y)
 		{
@@ -57,7 +57,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_col, const long exit, const int halo)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_x, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -66,16 +66,16 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	int bx = 0;
 	int by = 0;
 
-	while (cond != exit)
+	while (cond != loop_exit)
 	{
 		cond++;
 
 		int gx = bx + x - halo;
 		int gy = by + y - halo;
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			int real_x = gx + j;
+			int real_x = gx + i;
 			long index = real_x + gy * dim_x + z * dim_x * dim_y;
 
 			if (real_x >= 0 && gy >= 0 && real_x < dim_x && gy < dim_y)
@@ -99,7 +99,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 					z = 0;
 					bx += BLOCK_X - 2 * halo;
 
-					if (bx == last_col)
+					if (bx == last_x)
 					{
 						bx = 0;
 						by += BLOCK_Y - 2 * halo;
@@ -111,7 +111,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_col, const long exit, const int halo)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_x, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -120,16 +120,16 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 	int bx = 0;
 	int by = 0;
 
-	while (cond != exit)
+	while (cond != loop_exit)
 	{
 		cond++;
 
 		int gx = bx + x - halo;
 		int gy = by + y - halo;
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			int real_x = gx + j;
+			int real_x = gx + i;
 			long index = real_x + gy * dim_x + z * dim_x * dim_y;
 
 			if (real_x >= 0 && gy >= 0 && real_x < dim_x && gy < dim_y)
@@ -153,7 +153,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 					z = 0;
 					bx += BLOCK_X - 2 * halo;
 
-					if (bx == last_col)
+					if (bx == last_x)
 					{
 						bx = 0;
 						by += BLOCK_Y - 2 * halo;

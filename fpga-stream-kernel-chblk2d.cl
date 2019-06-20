@@ -29,18 +29,18 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
 	int y = get_global_id(1);
-	int bx = gidx * (BSIZE - 2 * halo);
+	int bx = gidx * (BLOCK_X - 2 * halo);
 	int gx = bx + x - halo;
 	CHAN_WIDTH temp;
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		int real_x = gx + j;
+		int real_x = gx + i;
 		long index = y * dim_x + real_x;
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			temp.data[j] = a[pad + index];
+			temp.data[i] = a[pad + index];
 		}
 	}
 
@@ -52,20 +52,20 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int di
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
 	int y = get_global_id(1);
-	int bx = gidx * (BSIZE - 2 * halo);
+	int bx = gidx * (BLOCK_X - 2 * halo);
 	int gx = bx + x - halo;
 	CHAN_WIDTH temp;
 
 	temp = read_channel(ch_copy);
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		int real_x = gx + j;
+		int real_x = gx + i;
 		long index = y * dim_x + real_x;
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			c[pad + index] = temp.data[j];
+			c[pad + index] = temp.data[i];
 		}
 	}
 }
@@ -75,19 +75,19 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
 	int y = get_global_id(1);
-	int bx = gidx * (BSIZE - 2 * halo);
+	int bx = gidx * (BLOCK_X - 2 * halo);
 	int gx = bx + x - halo;
 	CHAN_WIDTH temp_a, temp_b;
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		int real_x = gx + j;
+		int real_x = gx + i;
 		long index = y * dim_x + real_x;
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			temp_a.data[j] = a[pad + index];
-			temp_b.data[j] = b[pad + index];
+			temp_a.data[i] = a[pad + index];
+			temp_b.data[i] = b[pad + index];
 		}
 	}
 
@@ -100,7 +100,7 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
 	int y = get_global_id(1);
-	int bx = gidx * (BSIZE - 2 * halo);
+	int bx = gidx * (BLOCK_X - 2 * halo);
 	int gx = bx + x - halo;
 	CHAN_WIDTH temp_a, temp_b;
 
@@ -108,13 +108,13 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 	temp_b = read_channel(ch_mac_b);
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		int real_x = gx + j;
+		int real_x = gx + i;
 		long index = y * dim_x + real_x;
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			c[pad + index] = constValue * temp_a.data[j] + temp_b.data[j];
+			c[pad + index] = constValue * temp_a.data[i] + temp_b.data[i];
 		}
 	}
 }
@@ -122,14 +122,14 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_read(__global const float* restrict a, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
+__kernel void copy_read(__global const float* restrict a, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;
 
-	while (cond != exit)
+	while (cond != loop_exit)
 	{
 		cond++;
 
@@ -137,20 +137,20 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 		int gx = bx + x - halo;
 
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			int real_x = gx + j;
+			int real_x = gx + i;
 			long index = y * dim_x + real_x;
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				temp.data[j] = a[pad + index];
+				temp.data[i] = a[pad + index];
 			}
 		}
 
 		write_channel(ch_copy, temp);
 
-		x = (x + VEC) & (BSIZE - 1);
+		x = (x + VEC) & (BLOCK_X - 1);
 
 		if (x == 0)
 		{
@@ -159,21 +159,21 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 			if (y == dim_y)
 			{
 				y = 0;
-				bx += BSIZE - 2 * halo;
+				bx += BLOCK_X - 2 * halo;
 			}
 		}
 	}
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float* restrict c, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
+__kernel void copy_write(__global float* restrict c, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;
 
-	while (cond != exit)
+	while (cond != loop_exit)
 	{
 		cond++;
 
@@ -182,18 +182,18 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int di
 		int gx = bx + x - halo;
 
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			int real_x = gx + j;
+			int real_x = gx + i;
 			long index = y * dim_x + real_x;
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				c[pad + index] = temp.data[j];
+				c[pad + index] = temp.data[i];
 			}
 		}
 
-		x = (x + VEC) & (BSIZE - 1);
+		x = (x + VEC) & (BLOCK_X - 1);
 
 		if (x == 0)
 		{
@@ -202,21 +202,21 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int di
 			if (y == dim_y)
 			{
 				y = 0;
-				bx += BSIZE - 2 * halo;
+				bx += BLOCK_X - 2 * halo;
 			}
 		}
 	}
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
+__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;
 
-	while (cond != exit)
+	while (cond != loop_exit)
 	{
 		cond++;
 
@@ -224,22 +224,22 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 		int gx = bx + x - halo;
 
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			int real_x = gx + j;
+			int real_x = gx + i;
 			long index = y * dim_x + real_x;
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				temp_a.data[j] = a[pad + index];
-				temp_b.data[j] = b[pad + index];
+				temp_a.data[i] = a[pad + index];
+				temp_b.data[i] = b[pad + index];
 			}
 		}
 
 		write_channel(ch_mac_a, temp_a);
 		write_channel(ch_mac_b, temp_b);
 
-		x = (x + VEC) & (BSIZE - 1);
+		x = (x + VEC) & (BLOCK_X - 1);
 
 		if (x == 0)
 		{
@@ -248,21 +248,21 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 			if (y == dim_y)
 			{
 				y = 0;
-				bx += BSIZE - 2 * halo;
+				bx += BLOCK_X - 2 * halo;
 			}
 		}
 	}
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
+__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;
 
-	while (cond != exit)
+	while (cond != loop_exit)
 	{
 		cond++;
 
@@ -272,18 +272,18 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 		int gx = bx + x - halo;
 
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			int real_x = gx + j;
+			int real_x = gx + i;
 			long index = y * dim_x + real_x;
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				c[pad + index] = constValue * temp_a.data[j] + temp_b.data[j];
+				c[pad + index] = constValue * temp_a.data[i] + temp_b.data[i];
 			}
 		}
 
-		x = (x + VEC) & (BSIZE - 1);
+		x = (x + VEC) & (BLOCK_X - 1);
 
 		if (x == 0)
 		{
@@ -292,7 +292,7 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 			if (y == dim_y)
 			{
 				y = 0;
-				bx += BSIZE - 2 * halo;
+				bx += BLOCK_X - 2 * halo;
 			}
 		}
 	}

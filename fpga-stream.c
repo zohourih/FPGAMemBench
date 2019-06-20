@@ -617,24 +617,24 @@ int main(int argc, char **argv)
 	#endif
 #elif BLK2D
 	int valid_blk_x = BLOCK_X - 2 * halo;
-	int exit_x = (dim_y % valid_blk_x == 0) ? dim_y : dim_y + valid_blk_x - (dim_y % valid_blk_x);
-	int num_blk_x = exit_x / valid_blk_x;
+	int last_x = (dim_x % valid_blk_x == 0) ? dim_x : dim_x + valid_blk_x - (dim_x % valid_blk_x);
+	int num_blk_x = last_x / valid_blk_x;
 
 	#ifdef NDR
-		int total_dim_y = (BLOCK_X / VEC) * num_blk_x;
+		int total_dim_x = (BLOCK_X / VEC) * num_blk_x;
 
 		// set local and global work size
 		#ifdef INTEL_FPGA
-			size_t localSize[3] = {(size_t)(BLOCK_X / VEC), (size_t)dim_x, 1}; // localSize[1] is set like this to ensure the same index traversal ordering as the SWI kernel
+			size_t localSize[3] = {(size_t)(BLOCK_X / VEC), (size_t)dim_y, 1}; // localSize[1] is set like this to ensure the same index traversal ordering as the SWI kernel
 		#else
 			size_t localSize[3] = {(size_t)(BLOCK_X / VEC), 1, 1}; // localSize[1] is set like this since the above case does not work on GPUs due to local work-group size limit
 		#endif
-		size_t globalSize[3] = {(size_t)total_dim_y, (size_t)dim_x, 1};
+		size_t globalSize[3] = {(size_t)total_dim_x, (size_t)dim_y, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &dim_y     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
@@ -642,7 +642,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 2, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 3, sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &dim_y     ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
 		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)dim_x;
@@ -667,34 +667,34 @@ int main(int argc, char **argv)
 	#endif
 #elif CHBLK2D
 	int valid_blk_x = BLOCK_X - 2 * halo;
-	int exit_x = (dim_y % valid_blk_x == 0) ? dim_y : dim_y + valid_blk_x - (dim_y % valid_blk_x);
-	int num_blk_x = exit_x / valid_blk_x;
+	int last_x = (dim_x % valid_blk_x == 0) ? dim_x : dim_x + valid_blk_x - (dim_x % valid_blk_x);
+	int num_blk_x = last_x / valid_blk_x;
 
 	#ifdef NDR
-		int total_dim_y = (BLOCK_X / VEC) * num_blk_x;
+		int total_dim_x = (BLOCK_X / VEC) * num_blk_x;
 
 		// set local and global work size
-		size_t localSize[3] = {(size_t)(BLOCK_X / VEC), (size_t)dim_x, 1};
-		size_t globalSize[3] = {(size_t)total_dim_y, (size_t)dim_x, 1};
+		size_t localSize[3] = {(size_t)(BLOCK_X / VEC), (size_t)dim_y, 1};
+		size_t globalSize[3] = {(size_t)total_dim_x, (size_t)dim_y, 1};
 
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &dim_y     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 3, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &dim_y     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 3, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &dim_y     ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 4, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &dim_y     ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
 		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)dim_x;
@@ -730,14 +730,14 @@ int main(int argc, char **argv)
 #elif BLK3D
 	int valid_blk_x = BLOCK_X - 2 * halo;
 	int valid_blk_y = BLOCK_Y - 2 * halo;
-	int exit_x = (dim_y % valid_blk_x == 0) ? dim_y : dim_y + valid_blk_x - (dim_y % valid_blk_x);
-	int exit_y = (dim_x % valid_blk_y == 0) ? dim_x : dim_x + valid_blk_y - (dim_x % valid_blk_y);
-	int num_blk_x = exit_x / valid_blk_x;
-	int num_blk_y = exit_y / valid_blk_y;
+	int last_x = (dim_x % valid_blk_x == 0) ? dim_x : dim_x + valid_blk_x - (dim_x % valid_blk_x);
+	int last_y = (dim_y % valid_blk_y == 0) ? dim_y : dim_y + valid_blk_y - (dim_y % valid_blk_y);
+	int num_blk_x = last_x / valid_blk_x;
+	int num_blk_y = last_y / valid_blk_y;
 
 	#ifdef NDR
-		int total_dim_y = (BLOCK_X / VEC) * num_blk_x;
-		int total_dim_x = BLOCK_Y * num_blk_y;
+		int total_dim_x = (BLOCK_X / VEC) * num_blk_x;
+		int total_dim_y = BLOCK_Y * num_blk_y;
 
 		// set local and global work size
 		#ifdef INTEL_FPGA
@@ -745,13 +745,13 @@ int main(int argc, char **argv)
 		#else
 			size_t localSize[3] = {(size_t)(BLOCK_X / VEC), (size_t)(BLOCK_Y), 1}; // localSize[1] is set like this since the above case does not work on GPUs due to local work-group size limit
 		#endif
-		size_t globalSize[3] = {(size_t)total_dim_y, (size_t)total_dim_x, (size_t)dim_z};
+		size_t globalSize[3] = {(size_t)total_dim_x, (size_t)total_dim_y, (size_t)dim_z};
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0 , sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1 , sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2 , sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3 , sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4 , sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 5 , sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 0 , sizeof(void*   ), (void*) &deviceA   ) );
@@ -759,8 +759,8 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 2 , sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 3 , sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 4 , sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macKernel , 5 , sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(macKernel , 6 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 6 , sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 7 , sizeof(cl_int  ), (void*) &halo      ) );
 	#else
 		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)BLOCK_Y * (long)num_blk_y * (long)dim_z;
@@ -768,10 +768,10 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0 , sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1 , sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 2 , sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3 , sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 3 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 4 , sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 5 , sizeof(cl_int  ), (void*) &dim_z     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyKernel, 6 , sizeof(cl_int  ), (void*) &exit_x    ) );
+		CL_SAFE_CALL( clSetKernelArg(copyKernel, 6 , sizeof(cl_int  ), (void*) &last_x    ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 7 , sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 8 , sizeof(cl_int  ), (void*) &halo      ) );
 
@@ -780,24 +780,24 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 2 , sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 3 , sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 4 , sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macKernel , 5 , sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(macKernel , 6 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 5 , sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 6 , sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 7 , sizeof(cl_int  ), (void*) &dim_z     ) );
-		CL_SAFE_CALL( clSetKernelArg(macKernel , 8 , sizeof(cl_int  ), (void*) &exit_x    ) );
+		CL_SAFE_CALL( clSetKernelArg(macKernel , 8 , sizeof(cl_int  ), (void*) &last_x    ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 9 , sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 10, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
 #elif CHBLK3D
 	int valid_blk_x = BLOCK_X - 2 * halo;
 	int valid_blk_y = BLOCK_Y - 2 * halo;
-	int exit_x = (dim_y % valid_blk_x == 0) ? dim_y : dim_y + valid_blk_x - (dim_y % valid_blk_x);
-	int exit_y = (dim_x % valid_blk_y == 0) ? dim_x : dim_x + valid_blk_y - (dim_x % valid_blk_y);
-	int num_blk_x = exit_x / valid_blk_x;
-	int num_blk_y = exit_y / valid_blk_y;
+	int last_x = (dim_x % valid_blk_x == 0) ? dim_x : dim_x + valid_blk_x - (dim_x % valid_blk_x);
+	int last_y = (dim_y % valid_blk_y == 0) ? dim_y : dim_y + valid_blk_y - (dim_y % valid_blk_y);
+	int num_blk_x = last_x / valid_blk_x;
+	int num_blk_y = last_y / valid_blk_y;
 
 	#ifdef NDR
-		int total_dim_y = (BLOCK_X / VEC) * num_blk_x;
-		int total_dim_x = BLOCK_Y * num_blk_y;
+		int total_dim_x = (BLOCK_X / VEC) * num_blk_x;
+		int total_dim_y = BLOCK_Y * num_blk_y;
 
 		// set local and global work size
 		#ifdef INTEL_FPGA
@@ -805,67 +805,67 @@ int main(int argc, char **argv)
 		#else
 			size_t localSize[3] = {(size_t)(BLOCK_X / VEC), (size_t)(BLOCK_Y), 1}; // localSize[1] is set like this since the above case does not work on GPUs due to local work-group size limit
 		#endif
-		size_t globalSize[3] = {(size_t)total_dim_y, (size_t)total_dim_x, (size_t)dim_z};
+		size_t globalSize[3] = {(size_t)total_dim_x, (size_t)total_dim_y, (size_t)dim_z};
 
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 3, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 3, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 4, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 4, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 4, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 5, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 5, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
 		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)BLOCK_Y * (long)num_blk_y * (long)dim_z;
 
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 2, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 3, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 4, sizeof(cl_int  ), (void*) &dim_z     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 5, sizeof(cl_int  ), (void*) &exit_x    ) );
+		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 5, sizeof(cl_int  ), (void*) &last_x    ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 6, sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 7, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 2, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 3, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 4, sizeof(cl_int  ), (void*) &dim_z     ) );
-		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 5, sizeof(cl_int  ), (void*) &exit_x    ) );
+		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 5, sizeof(cl_int  ), (void*) &last_x    ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 6, sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(copyWriteKernel, 7, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 1, sizeof(void*   ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &dim_y     ) );
-		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 4, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 4, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 5, sizeof(cl_int  ), (void*) &dim_z     ) );
-		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 6, sizeof(cl_int  ), (void*) &exit_x    ) );
+		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 6, sizeof(cl_int  ), (void*) &last_x    ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 7, sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(macReadKernel  , 8, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 0, sizeof(void*   ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 1, sizeof(cl_float), (void*) &constValue) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 3, sizeof(cl_int  ), (void*) &dim_x     ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &dim_y     ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 5, sizeof(cl_int  ), (void*) &dim_z     ) );
-		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 6, sizeof(cl_int  ), (void*) &exit_x    ) );
+		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 6, sizeof(cl_int  ), (void*) &last_x    ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 7, sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 8, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
@@ -1044,13 +1044,13 @@ int main(int argc, char **argv)
 #elif defined(BLK2D) || defined(CHBLK2D)
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	long totalSize_B = ((num_blk_x * BLOCK_X) - (exit_x + 2 * halo - dim_y)) * dim_x * sizeof(float);
+	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - dim_x)) * dim_y * sizeof(float);
 	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgCopyTime), avgCopyTime);
 	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgMacTime ), avgMacTime);
 #elif defined(BLK3D) || defined(CHBLK3D)
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	long totalSize_B = ((num_blk_x * BLOCK_X) * (num_blk_y * BLOCK_X) - ((exit_x + 2 * halo) * (exit_y + 2 * halo) - (dim_y * dim_x)) - (num_blk_x - 1 + num_blk_y - 1) * (2 * halo) * halo - ((exit_x + halo - dim_y) * (num_blk_y - 1) + (exit_y + halo - dim_x) * (num_blk_x - 1)) * 2 * halo) * dim_z * sizeof(float);
+	long totalSize_B = ((num_blk_x * BLOCK_X) * (num_blk_y * BLOCK_X) - ((last_x + 2 * halo) * (last_y + 2 * halo) - (dim_x * dim_y)) - (num_blk_x - 1 + num_blk_y - 1) * (2 * halo) * halo - ((last_x + halo - dim_x) * (num_blk_y - 1) + (last_y + halo - dim_y) * (num_blk_x - 1)) * 2 * halo) * dim_z * sizeof(float);
 	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgCopyTime), avgCopyTime);
 	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgMacTime ), avgMacTime);
 #elif SCH

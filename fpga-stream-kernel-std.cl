@@ -14,9 +14,9 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	long gx = bx + x;
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		long index = gx + j;
+		long index = gx + i;
 		if (index < size)
 		{
 			c[pad + index] = a[pad + index];
@@ -33,9 +33,9 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 	long gx = bx + x;
 
 	#pragma unroll
-	for (int j = 0; j < VEC; j++)
+	for (int i = 0; i < VEC; i++)
 	{
-		long index = gx + j;
+		long index = gx + i;
 		if (index < size)
 		{
 			c[pad + index] = constValue * a[pad + index] + b[pad + index];
@@ -56,11 +56,11 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	{
 		cond++;
 
-		long i = bx + x;
+		long gx = bx + x;
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			long index = i + j;
+			long index = gx + i;
 			if (index < size)
 			{
 				c[pad + index] = a[pad + index];
@@ -87,11 +87,11 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 	{
 		cond++;
 
-		long i = bx + x;
+		long gx = bx + x;
 		#pragma unroll
-		for (int j = 0; j < VEC; j++)
+		for (int i = 0; i < VEC; i++)
 		{
-			long index = i + j;
+			long index = gx + i;
 			if (index < size)
 			{
 				c[pad + index] = constValue * a[pad + index] + b[pad + index];
