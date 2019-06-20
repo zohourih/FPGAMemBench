@@ -122,9 +122,9 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_read(__global const float* restrict a, const int pad, const int dim_y, const int dim_x, const int exit, const int halo)
+__kernel void copy_read(__global const float* restrict a, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;
@@ -166,9 +166,9 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float* restrict c, const int pad, const int dim_y, const int dim_x, const int exit, const int halo)
+__kernel void copy_write(__global float* restrict c, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;
@@ -209,9 +209,9 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int di
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int dim_y, const int dim_x, const int exit, const int halo)
+__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;
@@ -255,9 +255,9 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int dim_y, const int dim_x, const int exit, const int halo)
+__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int dim_y, const int dim_x, const long exit, const int halo)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int bx = 0;

@@ -57,9 +57,9 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_col, const int exit, const int halo)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_col, const long exit, const int halo)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int z = 0;
@@ -111,9 +111,9 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_col, const int exit, const int halo)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int dim_x, const int dim_y, const int dim_z, const int last_col, const long exit, const int halo)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	int y = 0;
 	int z = 0;

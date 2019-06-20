@@ -38,9 +38,9 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const int exit, const int overlap)
+__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const long exit, const int overlap)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	long bx = 0;
 
@@ -69,9 +69,9 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const int exit, const int overlap)
+__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const long exit, const int overlap)
 {
-	int cond = 0;
+	long cond = 0;
 	int x = 0;
 	long bx = 0;
 
