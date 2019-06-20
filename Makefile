@@ -22,7 +22,7 @@ ifeq ($(INTEL_FPGA),1)
 		SPACE = =
 	endif
 
-	KERNEL_FLAGS = -v $(DASH)report
+	KERNEL_FLAGS = -v -v -v $(DASH)report
 
 	ifeq ($(LEGACY),1)
 		KERNEL_FLAGS += -DLEGACY
