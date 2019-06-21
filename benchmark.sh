@@ -14,11 +14,9 @@ board=`aoc --list-boards | sed -n 2p | tr -d ' ' | cut -d "_" -f 1`
 if [[ "$board" == "de5net" ]]
 then
 	max_bw="25.6"
-	mem_freg="1600"
 elif [[ "$board" == "p385a" ]]
 then
 	max_bw="34.128"
-	mem_freg="2133"
 fi
 version=`aoc --version | grep Build | cut -d " " -f 2`
 folder=`echo "$board"_"$version"`
