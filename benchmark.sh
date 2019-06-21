@@ -2,13 +2,16 @@
 
 export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
-iter=10
+iter=5
 size=768
-dim_x_2d=24576
-dim_y_2d=8192
-dim_x_3d=1024
-dim_y_3d=1024
-dim_z_3d=192
+indexes=$(($size * 256 * 1024))
+sqrt=`echo "e(l($indexes)/2)" | bc -l`
+cbrt=`echo "e(l($indexes)/3)" | bc -l`
+dim_x_2d=`echo "x=l($sqrt)/l(2); scale=0; if (x%1 != 0) x = (x + 1); x = (x / 1); 2 ^ x" | bc -l`
+dim_y_2d=$(( $indexes / $dim_x_2d ))
+dim_x_3d=`echo "x=l($cbrt)/l(2); scale=0; if (x%1 != 0) x = (x + 1); x = (x / 1); 2 ^ x" | bc -l`
+dim_y_3d=$dim_x_3d
+dim_z_3d=$(( $indexes / ($dim_x_3d * dim_y_3d) ))
 size_switch=""
 board=`aoc --list-boards | sed -n 2p | tr -d ' ' | cut -d "_" -f 1`
 if [[ "$board" == "de5net" ]]
