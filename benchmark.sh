@@ -4,8 +4,11 @@ export CL_CONTEXT_COMPILER_MODE_ALTERA=3
 
 iter=10
 size=768
-dim_x=24576
-dim_y=8192
+dim_x_2d=24576
+dim_y_2d=8192
+dim_x_3d=1024
+dim_y_3d=1024
+dim_z_3d=192
 size_switch=""
 board=`aoc --list-boards | sed -n 2p | tr -d ' ' | cut -d "_" -f 1`
 if [[ "$board" == "de5net" ]]
@@ -60,9 +63,20 @@ do
 	elif [[ "$type" == "blk2d" ]] || [[ "$type" == "chblk2d" ]]
 	then
 		overlap_switch="-hw $halo"
-		size_switch="-x $dim_x -y $dim_y"
+		size_switch="-x $dim_x_2d -y $dim_y_2d"
+	elif [[ "$type" == "blk3d" ]] || [[ "$type" == "chblk3d" ]]
+	then
+		overlap_switch="-hw $halo"
+		size_switch="-x $dim_x_3d -y $dim_y_3d -z $dim_z_3d"
 	else
 		size_switch="-s $size"
+	fi
+
+	if [[ "$type" == "blk3d" ]] || [[ "$type" == "chblk3d" ]]
+	then
+		BSIZE=256
+	else
+		BSIZE=1024
 	fi
 
 	if [[ `echo $name | cut -d "_" -f 2` == NDR ]]
@@ -94,7 +108,7 @@ do
 
 	freq=`cat $folder/$name/acl_quartus_report.txt | grep Actual | cut -d " " -f 4 | xargs printf %0.2f`
 
-	make clean >/dev/null 2>&1; make $type INTEL_FPGA=1 HOST_ONLY=1 VEC=$VEC NO_INTER=$nointer NDR=$ndr >/dev/null 2>&1
+	make clean >/dev/null 2>&1; make $type INTEL_FPGA=1 HOST_ONLY=1 VEC=$VEC BSIZE=$BSIZE NO_INTER=$nointer NDR=$ndr >/dev/null 2>&1
 	rm fpga-stream-kernel.aocx >/dev/null 2>&1
 	ln -s "$folder/$i" fpga-stream-kernel.aocx
 	aocl program acl0 fpga-stream-kernel.aocx >/dev/null 2>&1
