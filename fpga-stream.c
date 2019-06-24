@@ -645,7 +645,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 5, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(macKernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
-		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)dim_x;
+		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)dim_y;
 
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 0, sizeof(void*   ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyKernel, 1, sizeof(void*   ), (void*) &deviceC   ) );
@@ -1044,13 +1044,16 @@ int main(int argc, char **argv)
 #elif defined(BLK2D) || defined(CHBLK2D)
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - dim_x)) * dim_y * sizeof(float);
+	int extra_halo_x = (dim_x % valid_blk_x >= halo || dim_x % valid_blk_x == 0) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
+	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - dim_x) - extra_halo_x) * dim_y * sizeof(float);
 	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgCopyTime), avgCopyTime);
 	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgMacTime ), avgMacTime);
 #elif defined(BLK3D) || defined(CHBLK3D)
 	avgCopyTime = totalCopyTime / (double)iter;
 	avgMacTime = totalMacTime / (double)iter;
-	long totalSize_B = ((num_blk_x * BLOCK_X) * (num_blk_y * BLOCK_X) - ((last_x + 2 * halo) * (last_y + 2 * halo) - (dim_x * dim_y)) - (num_blk_x - 1 + num_blk_y - 1) * (2 * halo) * halo - ((last_x + halo - dim_x) * (num_blk_y - 1) + (last_y + halo - dim_y) * (num_blk_x - 1)) * 2 * halo) * dim_z * sizeof(float);
+	int extra_halo_x = (dim_x % valid_blk_x >= halo || dim_x % valid_blk_x == 0) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
+	int extra_halo_y = (dim_y % valid_blk_y >= halo || dim_y % valid_blk_y == 0) ? 0 : halo - (dim_y % valid_blk_y); // in case the halo width in the last block is not fully traversed
+	long totalSize_B = ((num_blk_x * BLOCK_X) * (num_blk_y * BLOCK_X) - ((last_x + 2 * halo) * (last_y + 2 * halo) - ((dim_x - extra_halo_x) * (dim_y - extra_halo_y))) - (num_blk_x - 1 + num_blk_y - 1) * (2 * halo) * halo - ((last_x + halo + extra_halo_x - dim_x) * (num_blk_y - 1) + (last_y + halo + extra_halo_y - dim_y) * (num_blk_x - 1)) * 2 * halo) * dim_z * sizeof(float);
 	printf("Copy: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgCopyTime), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgCopyTime), avgCopyTime);
 	printf("MAC : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgMacTime ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgMacTime ), avgMacTime);
 #elif SCH
