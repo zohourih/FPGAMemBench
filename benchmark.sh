@@ -27,15 +27,22 @@ verify=""
 pad_start=0
 pad_end=0
 overlap=0
-halo=0
+halo_start=0
+halo_end=0
+halo_step=1
 overlap_switch=""
-if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]]
+if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]] || [[ "$3" == "--verify" ]]
 then
 	verify="--verify"
 fi
-if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]]
+if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]] || [[ "$3" == "--pad" ]]
 then
 	pad_end=16
+fi
+if [[ "$1" == "--halo" ]] || [[ "$2" == "--halo" ]] || [[ "$3" == "--halo" ]]
+then
+	halo_end=16
+	halo_step=2
 fi
 
 echo "Type" | xargs printf "%-9s"
@@ -56,22 +63,6 @@ for i in `ls $folder | grep aocx | sort -V`
 do
 	name="${i%.*}"
 	type=`echo $name | cut -d "-" -f 4 | cut -d "_" -f 1`
-
-	if [[ "$type" == "std" ]]
-	then
-		overlap_switch="-o $overlap"
-		size_switch="-s $size"
-	elif [[ "$type" == "blk2d" ]] || [[ "$type" == "chblk2d" ]]
-	then
-		overlap_switch="-hw $halo"
-		size_switch="-x $dim_x_2d -y $dim_y_2d"
-	elif [[ "$type" == "blk3d" ]] || [[ "$type" == "chblk3d" ]]
-	then
-		overlap_switch="-hw $halo"
-		size_switch="-x $dim_x_3d -y $dim_y_3d -z $dim_z_3d"
-	else
-		size_switch="-s $size"
-	fi
 
 	if [[ "$type" == "blk3d" ]] || [[ "$type" == "chblk3d" ]]
 	then
@@ -114,59 +105,78 @@ do
 	ln -s "$folder/$i" fpga-stream-kernel.aocx
 	aocl program acl0 fpga-stream-kernel.aocx >/dev/null 2>&1
 
-	for ((pad = $pad_start ; pad <= $pad_end ; pad++))
+	for ((halo = $halo_start ; halo <= $halo_end ; halo += $halo_step))
 	do
-		out=`DEVICE_TYPE=FPGA ./fpga-stream $size_switch -n $iter -pad $pad $overlap_switch $verify 2>&1`
-		#echo "$out" >> ast.txt
-
-		copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
-		mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
-
-		bw_copy=`echo "$freq * $VEC * 4 * 2 / 1000" | bc -l | xargs printf %0.3f`
-		if [[ `echo "$bw_copy > $max_bw" | bc -l` -eq 1 ]]
+		if [[ "$type" == "std" ]]
 		then
-			bw_copy=$max_bw
-		fi
-		bw_mac=`echo "$freq * $VEC * 4 * 3 / 1000" | bc -l | xargs printf %0.3f`
-		if [[ `echo "$bw_mac > $max_bw" | bc -l` -eq 1 ]]
+			overlap_switch="-o $overlap"
+			size_switch="-s $size"
+		elif [[ "$type" == "blk2d" ]] || [[ "$type" == "chblk2d" ]]
 		then
-			bw_mac=$max_bw
-		fi
-		copy_eff=`echo "100 * ($copy/$bw_copy)" | bc -l | xargs printf %0.1f`
-		mac_eff=`echo "100 * ($mac/$bw_mac)" | bc -l | xargs printf %0.1f`
-
-		copy_ver=`echo "$out" | grep Verify | grep Copy | cut -d " " -f 4 | cut -c 1-1`
-		mac_ver=`echo "$out" | grep Verify | grep MAC | cut -d " " -f 4 | cut -c 1-1`
-
-		if [[ -n `echo "$out" | grep Halo` ]]
+			overlap_switch="-hw $halo"
+			size_switch="-x $dim_x_2d -y $dim_y_2d"
+		elif [[ "$type" == "blk3d" ]] || [[ "$type" == "chblk3d" ]]
 		then
-			halo_overlap=`echo "$out" | grep "Halo" | tr -s " " | cut -d " " -f 3`
-		elif [[ -n `echo "$out" | grep Overlap` ]]
-		then
-			halo_overlap=`echo "$out" | grep "Overlap" | tr -s " " | cut -d " " -f 2`
+			overlap_switch="-hw $halo"
+			size_switch="-x $dim_x_3d -y $dim_y_3d -z $dim_z_3d"
 		else
-			halo_overlap="N/A"
+			size_switch="-s $size"
 		fi
 
-		echo $type  | tr '[:lower:]' '[:upper:]' | xargs printf "%-9s"
-		echo $model | xargs printf "%-8s"
-		echo $cache | xargs printf "%-8s"
-		echo $inter | xargs printf "%-9s"
-		echo $VEC | xargs printf "%-9s"
-		echo $freq | xargs printf "%-9s"
-		echo $pad | xargs printf "%-6s"
-		echo $halo_overlap | xargs printf "%-10s"
-		if [[ "$verify" == "--verify" ]]
-		then
-			echo "$copy\ ($copy_ver)" | xargs printf "%-15s"
-			echo "$mac\ ($mac_ver)" | xargs printf "%-15s"
-		else
-			echo $copy | xargs printf "%-14s"
-			echo $mac | xargs printf "%-13s"
-		fi
-		echo "$copy_eff%" | xargs printf "%-12s"
-		echo "$mac_eff%" | xargs printf "%-8s"
-		echo
+		for ((pad = $pad_start ; pad <= $pad_end ; pad++))
+		do
+			out=`DEVICE_TYPE=FPGA ./fpga-stream $size_switch -n $iter -pad $pad $overlap_switch $verify 2>&1`
+			#echo "$out" >> ast.txt
+
+			copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
+			mac=`echo "$out" | grep "MAC :" | cut -d " " -f 3`
+
+			bw_copy=`echo "$freq * $VEC * 4 * 2 / 1000" | bc -l | xargs printf %0.3f`
+			if [[ `echo "$bw_copy > $max_bw" | bc -l` -eq 1 ]]
+			then
+				bw_copy=$max_bw
+			fi
+			bw_mac=`echo "$freq * $VEC * 4 * 3 / 1000" | bc -l | xargs printf %0.3f`
+			if [[ `echo "$bw_mac > $max_bw" | bc -l` -eq 1 ]]
+			then
+				bw_mac=$max_bw
+			fi
+			copy_eff=`echo "100 * ($copy/$bw_copy)" | bc -l | xargs printf %0.1f`
+			mac_eff=`echo "100 * ($mac/$bw_mac)" | bc -l | xargs printf %0.1f`
+
+			copy_ver=`echo "$out" | grep Verify | grep Copy | cut -d " " -f 4 | cut -c 1-1`
+			mac_ver=`echo "$out" | grep Verify | grep MAC | cut -d " " -f 4 | cut -c 1-1`
+
+			if [[ -n `echo "$out" | grep Halo` ]]
+			then
+				halo_overlap=`echo "$out" | grep "Halo" | tr -s " " | cut -d " " -f 3`
+			elif [[ -n `echo "$out" | grep Overlap` ]]
+			then
+				halo_overlap=`echo "$out" | grep "Overlap" | tr -s " " | cut -d " " -f 2`
+			else
+				halo_overlap="N/A"
+			fi
+
+			echo $type  | tr '[:lower:]' '[:upper:]' | xargs printf "%-9s"
+			echo $model | xargs printf "%-8s"
+			echo $cache | xargs printf "%-8s"
+			echo $inter | xargs printf "%-9s"
+			echo $VEC | xargs printf "%-9s"
+			echo $freq | xargs printf "%-9s"
+			echo $pad | xargs printf "%-6s"
+			echo $halo_overlap | xargs printf "%-10s"
+			if [[ "$verify" == "--verify" ]]
+			then
+				echo "$copy\ ($copy_ver)" | xargs printf "%-15s"
+				echo "$mac\ ($mac_ver)" | xargs printf "%-15s"
+			else
+				echo $copy | xargs printf "%-14s"
+				echo $mac | xargs printf "%-13s"
+			fi
+			echo "$copy_eff%" | xargs printf "%-12s"
+			echo "$mac_eff%" | xargs printf "%-8s"
+			echo
+		done
 	done
 done
 
