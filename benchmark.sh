@@ -49,13 +49,14 @@ echo "Type" | xargs printf "%-9s"
 echo "Model" | xargs printf "%-8s"
 echo "Cache" | xargs printf "%-8s"
 echo "Inter." | xargs printf "%-9s"
-echo "Vector" | xargs printf "%-9s"
+echo "VEC" | xargs printf "%-6s"
 echo "Freq." | xargs printf "%-9s"
+echo "Size" | xargs printf "%-13s"
 echo "Pad" | xargs printf "%-6s"
-echo "Overlap" | xargs printf "%-10s"
-echo "Copy\ (GB/s)" | xargs printf "%-14s"
-echo "MAC\ (GB/s)" | xargs printf "%-13s"
-echo "Copy\ Eff." | xargs printf "%-12s"
+echo "O\\\H" | xargs printf "%-6s"
+echo "Copy\ (GB/s)" | xargs printf "%-13s"
+echo "MAC\ (GB/s)" | xargs printf "%-12s"
+echo "Copy\ Eff." | xargs printf "%-11s"
 echo "MAC\ Eff." | xargs printf "%-8s"
 echo
 
@@ -107,20 +108,30 @@ do
 
 	for ((halo = $halo_start ; halo <= $halo_end ; halo += $halo_step))
 	do
+		compute_bsize_x=$(( $BSIZE - (2 * $halo) ))
+		compute_bsize_y=$(( $BSIZE - (2 * $halo) ))
+		dim_x_2d_aligned=$(( ($dim_x_2d % $compute_bsize_x) == 0 ? $dim_x_2d : ($dim_x_2d + $compute_bsize_x - $dim_x_2d % $compute_bsize_x) ))
+		dim_x_3d_aligned=$(( ($dim_x_3d % $compute_bsize_x) == 0 ? $dim_x_3d : ($dim_x_3d + $compute_bsize_x - $dim_x_3d % $compute_bsize_x) ))
+		dim_y_3d_aligned=$(( ($dim_y_3d % $compute_bsize_y) == 0 ? $dim_y_3d : ($dim_y_3d + $compute_bsize_y - $dim_y_3d % $compute_bsize_y) ))
+
 		if [[ "$type" == "std" ]]
 		then
 			overlap_switch="-o $overlap"
 			size_switch="-s $size"
+			dim=$size
 		elif [[ "$type" == "blk2d" ]] || [[ "$type" == "chblk2d" ]]
 		then
 			overlap_switch="-hw $halo"
 			size_switch="-x $dim_x_2d -y $dim_y_2d"
+			dim=`echo "$dim_x_2d_aligned"x"$dim_y_2d"`
 		elif [[ "$type" == "blk3d" ]] || [[ "$type" == "chblk3d" ]]
 		then
 			overlap_switch="-hw $halo"
 			size_switch="-x $dim_x_3d -y $dim_y_3d -z $dim_z_3d"
+			dim=`echo "$dim_x_3d_aligned"x"$dim_y_3d_aligned"x"$dim_z_3d"`
 		else
 			size_switch="-s $size"
+			dim=$size
 		fi
 
 		for ((pad = $pad_start ; pad <= $pad_end ; pad++))
@@ -161,19 +172,20 @@ do
 			echo $model | xargs printf "%-8s"
 			echo $cache | xargs printf "%-8s"
 			echo $inter | xargs printf "%-9s"
-			echo $VEC | xargs printf "%-9s"
+			echo $VEC | xargs printf "%-6s"
 			echo $freq | xargs printf "%-9s"
+			echo $dim | xargs printf "%-13s"
 			echo $pad | xargs printf "%-6s"
-			echo $halo_overlap | xargs printf "%-10s"
+			echo $halo_overlap | xargs printf "%-6s"
 			if [[ "$verify" == "--verify" ]]
 			then
-				echo "$copy\ ($copy_ver)" | xargs printf "%-15s"
-				echo "$mac\ ($mac_ver)" | xargs printf "%-15s"
+				echo "$copy\ ($copy_ver)" | xargs printf "%-13s"
+				echo "$mac\ ($mac_ver)" | xargs printf "%-12s"
 			else
-				echo $copy | xargs printf "%-14s"
-				echo $mac | xargs printf "%-13s"
+				echo $copy | xargs printf "%-13s"
+				echo $mac | xargs printf "%-12s"
 			fi
-			echo "$copy_eff%" | xargs printf "%-12s"
+			echo "$copy_eff%" | xargs printf "%-11s"
 			echo "$mac_eff%" | xargs printf "%-8s"
 			echo
 		done
