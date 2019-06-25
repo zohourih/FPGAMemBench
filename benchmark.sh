@@ -42,7 +42,6 @@ fi
 if [[ "$1" == "--halo" ]] || [[ "$2" == "--halo" ]] || [[ "$3" == "--halo" ]]
 then
 	halo_end=16
-	halo_step=2
 fi
 
 echo "Type" | xargs printf "%-9s"
