@@ -121,12 +121,12 @@ do
 		elif [[ "$type" == "blk2d" ]] || [[ "$type" == "chblk2d" ]]
 		then
 			overlap_switch="-hw $halo"
-			size_switch="-x $dim_x_2d -y $dim_y_2d"
+			size_switch="-x $dim_x_2d_aligned -y $dim_y_2d"
 			dim=`echo "$dim_x_2d_aligned"x"$dim_y_2d"`
 		elif [[ "$type" == "blk3d" ]] || [[ "$type" == "chblk3d" ]]
 		then
 			overlap_switch="-hw $halo"
-			size_switch="-x $dim_x_3d -y $dim_y_3d -z $dim_z_3d"
+			size_switch="-x $dim_x_3d_aligned -y $dim_y_3d_aligned -z $dim_z_3d"
 			dim=`echo "$dim_x_3d_aligned"x"$dim_y_3d_aligned"x"$dim_z_3d"`
 		else
 			size_switch="-s $size"
