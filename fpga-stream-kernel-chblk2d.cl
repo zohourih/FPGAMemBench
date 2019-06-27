@@ -24,7 +24,7 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 
 #ifdef NDR //NDRange kernels
 
-__kernel void copy_read(__global const float* restrict a, const int pad, const int dim_x, const int halo)
+__kernel void copy_read(__global const float* restrict a, const int pad, const int pad_x, const int dim_x, const int halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -37,17 +37,17 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 	for (int i = 0; i < VEC; i++)
 	{
 		int real_x = gx + i;
-		long index = y * dim_x + real_x;
+		long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			temp.data[i] = a[pad + index];
+			temp.data[i] = a[index];
 		}
 	}
 
 	write_channel(ch_copy, temp);
 }
 
-__kernel void copy_write(__global float* restrict c, const int pad, const int dim_x, const int halo)
+__kernel void copy_write(__global float* restrict c, const int pad, const int pad_x, const int dim_x, const int halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -62,15 +62,15 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int di
 	for (int i = 0; i < VEC; i++)
 	{
 		int real_x = gx + i;
-		long index = y * dim_x + real_x;
+		long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			c[pad + index] = temp.data[i];
+			c[index] = temp.data[i];
 		}
 	}
 }
 
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int dim_x, const int halo)
+__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int pad_x, const int dim_x, const int halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -83,11 +83,11 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 	for (int i = 0; i < VEC; i++)
 	{
 		int real_x = gx + i;
-		long index = y * dim_x + real_x;
+		long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			temp_a.data[i] = a[pad + index];
-			temp_b.data[i] = b[pad + index];
+			temp_a.data[i] = a[index];
+			temp_b.data[i] = b[index];
 		}
 	}
 
@@ -95,7 +95,7 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 	write_channel(ch_mac_b, temp_b);
 }
 
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int dim_x, const int halo)
+__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int pad_x, const int dim_x, const int halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -111,10 +111,10 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 	for (int i = 0; i < VEC; i++)
 	{
 		int real_x = gx + i;
-		long index = y * dim_x + real_x;
+		long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			c[pad + index] = constValue * temp_a.data[i] + temp_b.data[i];
+			c[index] = constValue * temp_a.data[i] + temp_b.data[i];
 		}
 	}
 }
@@ -122,7 +122,7 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_read(__global const float* restrict a, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
+__kernel void copy_read(__global const float* restrict a, const int pad, const int pad_x, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -140,11 +140,11 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 		for (int i = 0; i < VEC; i++)
 		{
 			int real_x = gx + i;
-			long index = y * dim_x + real_x;
+			long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				temp.data[i] = a[pad + index];
+				temp.data[i] = a[index];
 			}
 		}
 
@@ -166,7 +166,7 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float* restrict c, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
+__kernel void copy_write(__global float* restrict c, const int pad, const int pad_x, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -185,11 +185,11 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int di
 		for (int i = 0; i < VEC; i++)
 		{
 			int real_x = gx + i;
-			long index = y * dim_x + real_x;
+			long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				c[pad + index] = temp.data[i];
+				c[index] = temp.data[i];
 			}
 		}
 
@@ -209,7 +209,7 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int di
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
+__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int pad_x, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -227,12 +227,12 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 		for (int i = 0; i < VEC; i++)
 		{
 			int real_x = gx + i;
-			long index = y * dim_x + real_x;
+			long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				temp_a.data[i] = a[pad + index];
-				temp_b.data[i] = b[pad + index];
+				temp_a.data[i] = a[index];
+				temp_b.data[i] = b[index];
 			}
 		}
 
@@ -255,7 +255,7 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int dim_x, const int dim_y, const long loop_exit, const int halo)
+__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int pad_x, const int dim_x, const int dim_y, const long loop_exit, const int halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -275,11 +275,11 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 		for (int i = 0; i < VEC; i++)
 		{
 			int real_x = gx + i;
-			long index = y * dim_x + real_x;
+			long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				c[pad + index] = constValue * temp_a.data[i] + temp_b.data[i];
+				c[index] = constValue * temp_a.data[i] + temp_b.data[i];
 			}
 		}
 
