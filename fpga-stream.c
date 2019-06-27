@@ -769,7 +769,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 4, sizeof(cl_int  ), (void*) &dim_x     ) );
 		CL_SAFE_CALL( clSetKernelArg(macWriteKernel , 5, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
-		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)dim_x;
+		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x * (long)dim_y;
 
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(copyReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
