@@ -20,10 +20,11 @@ __kernel void r1w1(__global const float* restrict a,
 	#pragma unroll
 	for (int i = 0; i < VEC; i++)
 	{
-		long index = gx + i;
-		if (index < size)
+		long real_x = gx + i;
+		long index = pad + real_x;
+		if (real_x < size)
 		{
-			c[pad + index] = a[pad + index];
+			c[index] = a[index];
 		}
 	}
 }
@@ -44,10 +45,11 @@ __kernel void r2w1(__global const float* restrict a,
 	#pragma unroll
 	for (int i = 0; i < VEC; i++)
 	{
-		long index = gx + i;
-		if (index < size)
+		long real_x = gx + i;
+		long index = pad + real_x;
+		if (real_x < size)
 		{
-			c[pad + index] = a[pad + index] + b[pad + index];
+			c[index] = a[index] + b[index];
 		}
 	}
 }
@@ -74,10 +76,11 @@ __kernel void r1w1(__global const float* restrict a,
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
-			long index = gx + i;
-			if (index < size)
+			long real_x = gx + i;
+			long index = pad + real_x;
+			if (real_x < size)
 			{
-				c[pad + index] = a[pad + index];
+				c[index] = a[index];
 			}
 		}
 
@@ -111,10 +114,11 @@ __kernel void r2w1(__global const float* restrict a,
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
-			long index = gx + i;
-			if (index < size)
+			long real_x = gx + i;
+			long index = pad + real_x;
+			if (real_x < size)
 			{
-				c[pad + index] = a[pad + index] + b[pad + index];
+				c[index] = a[index] + b[index];
 			}
 		}
 
