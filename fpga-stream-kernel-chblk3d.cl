@@ -24,7 +24,13 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 
 #ifdef NDR //NDRange kernels
 
-__kernel void copy_read(__global const float* restrict a, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int halo)
+__kernel void r1w1_read(__global const float* restrict a,
+                                 const int             pad,
+                                 const int             pad_x,
+                                 const int             pad_y,
+                                 const int             dim_x,
+                                 const int             dim_y,
+                                 const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -51,7 +57,13 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 	write_channel(ch_copy, temp);
 }
 
-__kernel void copy_write(__global float* restrict c, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int halo)
+__kernel void r1w1_write(__global       float* restrict c,
+                                  const int             pad,
+                                  const int             pad_x,
+                                  const int             pad_y,
+                                  const int             dim_x,
+                                  const int             dim_y,
+                                  const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -78,7 +90,14 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int pa
 	}
 }
 
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int halo)
+__kernel void r2w1_read(__global const float* restrict a,
+                        __global const float* restrict b,
+                                 const int             pad,
+                                 const int             pad_x,
+                                 const int             pad_y,
+                                 const int             dim_x,
+                                 const int             dim_y,
+                                 const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -107,7 +126,13 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 	write_channel(ch_mac_b, temp_b);
 }
 
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int halo)
+__kernel void r2w1_write(__global       float* restrict c,
+                                  const int             pad,
+                                  const int             pad_x,
+                                  const int             pad_y,
+                                  const int             dim_x,
+                                  const int             dim_y,
+                                  const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -130,7 +155,7 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 		long index = pad + z * (pad_x + dim_x) * (pad_y + dim_y) + (gy + pad_y) * (pad_x + dim_x) + (pad_x + real_x);
 		if (real_x >= 0 && gy >= 0 && real_x < dim_x && gy < dim_y)
 		{
-			c[index] = constValue * temp_a.data[i] + temp_b.data[i];
+			c[index] = temp_a.data[i] + temp_b.data[i];
 		}
 	}
 }
@@ -138,7 +163,16 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_read(__global const float* restrict a, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int dim_z, const int x_exit, const long loop_exit, const int halo)
+__kernel void r1w1_read(__global const float* restrict a,
+                                 const int             pad,
+                                 const int             pad_x,
+                                 const int             pad_y,
+                                 const int             dim_x,
+                                 const int             dim_y,
+                                 const int             dim_z,
+                                 const int             x_exit,
+                                 const long            loop_exit,
+                                 const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -196,7 +230,16 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const i
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float* restrict c, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int dim_z, const int x_exit, const long loop_exit, const int halo)
+__kernel void r1w1_write(__global       float* restrict c,
+                                  const int             pad,
+                                  const int             pad_x,
+                                  const int             pad_y,
+                                  const int             dim_x,
+                                  const int             dim_y,
+                                  const int             dim_z,
+                                  const int             x_exit,
+                                  const long            loop_exit,
+                                  const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -253,7 +296,17 @@ __kernel void copy_write(__global float* restrict c, const int pad, const int pa
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int dim_z, const int x_exit, const long loop_exit, const int halo)
+__kernel void r2w1_read(__global const float* restrict a,
+                        __global const float* restrict b,
+                                 const int             pad,
+                                 const int             pad_x,
+                                 const int             pad_y,
+                                 const int             dim_x,
+                                 const int             dim_y,
+                                 const int             dim_z,
+                                 const int             x_exit,
+                                 const long            loop_exit,
+                                 const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -313,7 +366,16 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const int pad_x, const int pad_y, const int dim_x, const int dim_y, const int dim_z, const int x_exit, const long loop_exit, const int halo)
+__kernel void r2w1_write(__global       float* restrict c,
+                                  const int             pad,
+                                  const int             pad_x,
+                                  const int             pad_y,
+                                  const int             dim_x,
+                                  const int             dim_y,
+                                  const int             dim_z,
+                                  const int             x_exit,
+                                  const long            loop_exit,
+                                  const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -340,7 +402,7 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 
 			if (real_x >= 0 && gy >= 0 && real_x < dim_x && gy < dim_y)
 			{
-				c[index] = constValue * temp_a.data[i] + temp_b.data[i];
+				c[index] = temp_a.data[i] + temp_b.data[i];
 			}
 		}
 

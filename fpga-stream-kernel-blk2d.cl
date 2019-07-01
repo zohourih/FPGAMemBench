@@ -5,7 +5,12 @@
 
 #ifdef NDR //NDRange kernels
 
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int pad_x, const int dim_x, const int halo)
+__kernel void r1w1(__global const float* restrict a,
+                   __global       float* restrict c,
+                            const int             pad,
+                            const int             pad_x,
+                            const int             dim_x,
+                            const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -25,7 +30,13 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 	}
 }
 
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int pad_x, const int dim_x, const int halo)
+__kernel void r2w1(__global const float* restrict a,
+                   __global const float* restrict b,
+                   __global       float* restrict c,
+                            const int             pad,
+                            const int             pad_x,
+                            const int             dim_x,
+                            const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -40,7 +51,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 		long index = pad + y * (pad_x + dim_x) + (pad_x + real_x);
 		if (real_x >= 0 && real_x < dim_x)
 		{
-			c[index] = constValue * a[index] + b[index];
+			c[index] = a[index] + b[index];
 		}
 	}
 }
@@ -48,7 +59,14 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const int pad_x, const int dim_x, const int dim_y, const long loop_exit, const int halo)
+__kernel void r1w1(__global const float* restrict a,
+                   __global       float* restrict c,
+                            const int             pad,
+                            const int             pad_x,
+                            const int             dim_x,
+                            const int             dim_y,
+                            const long            loop_exit,
+                            const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -89,7 +107,15 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const int pad_x, const int dim_x, const int dim_y, const long loop_exit, const int halo)
+__kernel void r2w1(__global const float* restrict a,
+                   __global const float* restrict b,
+                   __global       float* restrict c,
+                            const int    pad,
+                            const int    pad_x,
+                            const int    dim_x,
+                            const int    dim_y,
+                            const long   loop_exit,
+                            const int    halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -110,7 +136,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 
 			if (real_x >= 0 && real_x < dim_x)
 			{
-				c[index] = constValue * a[index] + b[index];
+				c[index] = a[index] + b[index];
 			}
 		}
 

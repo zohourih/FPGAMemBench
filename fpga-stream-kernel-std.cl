@@ -6,7 +6,7 @@
 #ifdef NDR //NDRange kernels
 
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const int overlap)
+__kernel void r1w1(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const int overlap)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -25,7 +25,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const int overlap)
+__kernel void r2w1(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const int overlap)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
@@ -46,7 +46,7 @@ __kernel void mac(__global const float* restrict a, __global const float* restri
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const long exit, const int overlap)
+__kernel void r1w1(__global const float* restrict a, __global float* restrict c, const int pad, const long size, const long exit, const int overlap)
 {
 	long cond = 0;
 	int x = 0;
@@ -77,7 +77,7 @@ __kernel void copy(__global const float* restrict a, __global float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const long exit, const int overlap)
+__kernel void r2w1(__global const float* restrict a, __global const float* restrict b, __global float* restrict c, const float constValue, const int pad, const long size, const long exit, const int overlap)
 {
 	long cond = 0;
 	int x = 0;

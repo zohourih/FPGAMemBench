@@ -25,7 +25,8 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 #ifdef NDR //NDRange kernels
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
-__kernel void copy_read(__global const float* restrict a, const int pad)
+__kernel void r1w1_read(__global const float* restrict a,
+                                 const int             pad)
 {
 	int tid = get_global_id(0);
 	long i = tid * VEC;
@@ -41,7 +42,8 @@ __kernel void copy_read(__global const float* restrict a, const int pad)
 }
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
-__kernel void copy_write(__global float* restrict c, const int pad)
+__kernel void r1w1_write(__global       float* restrict c,
+                                  const int             pad)
 {
 	int tid = get_global_id(0);
 	long i = tid * VEC;
@@ -57,7 +59,9 @@ __kernel void copy_write(__global float* restrict c, const int pad)
 }
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad)
+__kernel void r2w1_read(__global const float* restrict a,
+                        __global const float* restrict b,
+                                 const int             pad)
 {
 	int tid = get_global_id(0);
 	long i = tid * VEC;
@@ -75,7 +79,8 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 }
 
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad)
+__kernel void r2w1_write(__global       float* restrict c,
+                                  const int             pad)
 {
 	int tid = get_global_id(0);
 	long i = tid * VEC;
@@ -87,14 +92,16 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 	#pragma unroll
 	for (int j = 0; j < VEC; j++)
 	{
-		c[pad + i + j] = constValue * temp_a.data[j] + temp_b.data[j];
+		c[pad + i + j] = temp_a.data[j] + temp_b.data[j];
 	}
 }
 
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_read(__global const float* restrict a, const int pad, const long size)
+__kernel void r1w1_read(__global const float* restrict a,
+                                 const int             pad,
+                                 const long            size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{
@@ -111,7 +118,9 @@ __kernel void copy_read(__global const float* restrict a, const int pad, const l
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void copy_write(__global float* restrict c, const int pad, const long size)
+__kernel void r1w1_write(__global       float* restrict c,
+                                  const int             pad,
+                                  const long            size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{
@@ -128,7 +137,10 @@ __kernel void copy_write(__global float* restrict c, const int pad, const long s
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_read(__global const float* restrict a, __global const float* restrict b, const int pad, const long size)
+__kernel void r2w1_read(__global const float* restrict a,
+                        __global const float* restrict b,
+                                 const int             pad,
+                                 const long            size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{
@@ -147,7 +159,9 @@ __kernel void mac_read(__global const float* restrict a, __global const float* r
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void mac_write(__global float* restrict c, const float constValue, const int pad, const long size)
+__kernel void r2w1_write(__global       float* restrict c,
+                                  const int             pad,
+                                  const long            size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{
@@ -159,7 +173,7 @@ __kernel void mac_write(__global float* restrict c, const float constValue, cons
 		#pragma unroll
 		for (int j = 0; j < VEC; j++)
 		{
-			c[pad + i + j] = constValue * temp_a.data[j] + temp_b.data[j];
+			c[pad + i + j] = temp_a.data[j] + temp_b.data[j];
 		}
 	}
 }
