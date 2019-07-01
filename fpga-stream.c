@@ -37,7 +37,7 @@
 static cl_context       context;
 #if defined(STD) || defined(BLK2D) || defined(BLK3D)
 static cl_command_queue queue;
-#elif defined(CH) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
 static cl_command_queue queue_read, queue_write;
 #endif
 static cl_device_id*    deviceList;
@@ -93,7 +93,7 @@ static inline void init()
 		display_error_message(error, stdout);
 		exit(-1);
 	}
-#elif defined(CH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(CHBLK2D) || defined(CHBLK3D)
 	queue_read = clCreateCommandQueue(context, deviceList[0], 0, NULL);
 	if(!queue_read)
 	{
@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 	}
 
 	clReleaseProgram(prog);
-#elif defined(CH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(CHBLK2D) || defined(CHBLK3D)
 	cl_kernel r1w1ReadKernel, r1w1WriteKernel, r2w1ReadKernel, r2w1WriteKernel;
 
 	r1w1ReadKernel = clCreateKernel(prog, "r1w1_read", &error);
@@ -443,8 +443,8 @@ int main(int argc, char **argv)
 
 #ifdef STD
 	printf("Kernel type:           Standard\n");
-#elif CH
-	printf("Kernel type:           Channelized\n");
+#elif CHSTD
+	printf("Kernel type:           Channelized standard\n");
 #elif BLK2D
 	printf("Kernel type:           2D overlapped blocking\n");
 #elif CHBLK2D
@@ -589,7 +589,7 @@ int main(int argc, char **argv)
 #if defined(STD) || defined(BLK2D) || defined(BLK3D)
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceA, 1, 0, padded_size_Byte, hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue, deviceB, 1, 0, padded_size_Byte, hostB, 0, 0, 0));
-#elif defined(CH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(CHBLK2D) || defined(CHBLK3D)
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceA, 1, 0, padded_size_Byte, hostA, 0, 0, 0));
 	CL_SAFE_CALL(clEnqueueWriteBuffer(queue_read, deviceB, 1, 0, padded_size_Byte, hostB, 0, 0, 0));
 #elif SCH
@@ -638,7 +638,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 5, sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 6, sizeof(cl_int  ), (void*) &overlap   ) );
 	#endif
-#elif CH
+#elif CHSTD
 	#ifdef NDR
 		// set local and global work size
 		size_t localSize[3] = {(size_t)WGS, 1, 1};
@@ -977,7 +977,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, r1w1Kernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif defined(CH) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , r1w1ReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, r1w1WriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
@@ -1001,7 +1001,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, r1w1Kernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif defined(CH) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , r1w1ReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, r1w1WriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
@@ -1024,7 +1024,7 @@ int main(int argc, char **argv)
 	#if defined(STD) || defined(BLK2D) || defined(BLK3D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue);
-	#elif defined (CH) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
+	#elif defined (CHSTD) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
@@ -1098,7 +1098,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clEnqueueTask(queue, r2w1Kernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue);
-#elif defined(CH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(CHBLK2D) || defined(CHBLK3D)
 	#ifdef NDR
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , r2w1ReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, r2w1WriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
@@ -1121,7 +1121,7 @@ int main(int argc, char **argv)
 	#if defined(STD) || defined(BLK2D) || defined(BLK3D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue);
-	#elif defined(CH) || defined(CHBLK2D) || defined(CHBLK3D)
+	#elif defined(CHSTD) || defined(CHBLK2D) || defined(CHBLK3D)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
@@ -1220,7 +1220,7 @@ int main(int argc, char **argv)
 
 #if defined(STD) || defined(BLK2D) || defined(BLK3D)
 	clReleaseCommandQueue(queue);
-#elif defined(CH) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
+#elif defined(CHSTD) || defined(SCH) || defined(CHBLK2D) || defined(CHBLK3D)
 	clReleaseCommandQueue(queue_read);
 	clReleaseCommandQueue(queue_write);
 #endif
