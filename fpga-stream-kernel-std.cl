@@ -9,20 +9,20 @@ __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void r1w1(__global const float* restrict a,
                    __global       float* restrict c,
                             const int             pad,
-                            const long            size,
-                            const int             overlap)
+                            const long            dim_x,
+                            const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	long bx = gidx * (BLOCK_X - overlap);
-	long gx = bx + x;
+	long bx = gidx * (BLOCK_X - 2 * halo);
+	long gx = bx + x - halo;
 
 	#pragma unroll
 	for (int i = 0; i < VEC; i++)
 	{
 		long real_x = gx + i;
 		long index = pad + real_x;
-		if (real_x < size)
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			c[index] = a[index];
 		}
@@ -34,20 +34,20 @@ __kernel void r2w1(__global const float* restrict a,
                    __global const float* restrict b,
                    __global       float* restrict c,
                             const int             pad,
-                            const long            size,
-                            const int             overlap)
+                            const long            dim_x,
+                            const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	long bx = gidx * (BLOCK_X - overlap);
-	long gx = bx + x;
+	long bx = gidx * (BLOCK_X - 2 * halo);
+	long gx = bx + x - halo;
 
 	#pragma unroll
 	for (int i = 0; i < VEC; i++)
 	{
 		long real_x = gx + i;
 		long index = pad + real_x;
-		if (real_x < size)
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			c[index] = a[index] + b[index];
 		}
@@ -60,9 +60,9 @@ __attribute__((max_global_work_dim(0)))
 __kernel void r1w1(__global const float* restrict a,
                    __global       float* restrict c,
                             const int             pad,
-                            const long            size,
+                            const long            dim_x,
                             const long            exit,
-                            const int             overlap)
+                            const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -72,13 +72,13 @@ __kernel void r1w1(__global const float* restrict a,
 	{
 		cond++;
 
-		long gx = bx + x;
+		long gx = bx + x - halo;
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
 			long real_x = gx + i;
 			long index = pad + real_x;
-			if (real_x < size)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				c[index] = a[index];
 			}
@@ -88,7 +88,7 @@ __kernel void r1w1(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - overlap;
+			bx += BLOCK_X - halo;
 		}
 	}
 }
@@ -98,9 +98,9 @@ __kernel void r2w1(__global const float* restrict a,
                    __global const float* restrict b,
                    __global       float* restrict c,
                             const int             pad,
-                            const long            size,
+                            const long            dim_x,
                             const long            exit,
-                            const int             overlap)
+                            const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -110,13 +110,13 @@ __kernel void r2w1(__global const float* restrict a,
 	{
 		cond++;
 
-		long gx = bx + x;
+		long gx = bx + x - halo;
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
 			long real_x = gx + i;
 			long index = pad + real_x;
-			if (real_x < size)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				c[index] = a[index] + b[index];
 			}
@@ -126,7 +126,7 @@ __kernel void r2w1(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - overlap;
+			bx += BLOCK_X - halo;
 		}
 	}
 }

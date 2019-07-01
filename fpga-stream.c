@@ -135,7 +135,7 @@ static inline void init()
 static inline void usage(char **argv)
 {
 #if defined(STD) || defined(CHSTD)
-	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -pad <array padding indexes> -o <number of overlapped indexes> --verbose --verify\n", argv[0]);
+	printf("\nUsage: %s -s <buffer size in MiB> -n <number of iterations> -pad <array padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
 #elif defined(BLK2D) || defined(CHBLK2D)
 	printf("\nUsage: %s -x <row width> -y <column height> -n <number of iterations> -pad <array padding indexes> -pad_x <row padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
 #elif defined(BLK3D) || defined(CHBLK3D)
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 	int pad = 0;									// padding
 	int verbose = 0, verify = 0;
 #if defined(STD) || defined(CHSTD)
-	int overlap = 0;
+	int halo = 0;
 #elif defined(BLK2D) || defined(CHBLK2D)
 	int halo = 0;
 	int pad_x = 0;
@@ -226,13 +226,7 @@ int main(int argc, char **argv)
 			pad = atoi(argv[arg + 1]);
 			arg += 2;
 		}
-	#if defined(STD) || defined(CHSTD)
-		else if (strcmp(argv[arg], "-o") == 0)
-		{
-			overlap = atoi(argv[arg + 1]);
-			arg += 2;
-		}
-	#elif defined(BLK2D) || defined(CHBLK2D) || defined(BLK3D) || defined(CHBLK3D)
+	#ifndef SCH
 		else if (strcmp(argv[arg], "-hw") == 0)
 		{
 			halo = atoi(argv[arg + 1]);
@@ -495,7 +489,7 @@ int main(int argc, char **argv)
 
 #ifdef STD
 	printf("Array padding:         %d\n", pad);
-	printf("Overlap:               %d\n\n", overlap);
+	printf("Halo width             %d\n\n", halo);
 #elif defined(BLK2D) || defined(CHBLK2D)
 	printf("Array padding:         %d\n", pad);
 	printf("Row padding:           %d\n", pad_x);
@@ -597,9 +591,9 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef STD
-	int valid_blk_x = BLOCK_X - overlap;
-	long exit_index = (array_size % valid_blk_x == 0) ? array_size : array_size + valid_blk_x - (array_size % valid_blk_x);
-	int num_blk_x = exit_index / valid_blk_x;
+	int valid_blk_x = BLOCK_X - 2 * halo;
+	long last_x = (array_size % valid_blk_x == 0) ? array_size : array_size + valid_blk_x - (array_size % valid_blk_x);
+	int num_blk_x = last_x / valid_blk_x;
 
 	#ifdef NDR
 		long total_index = (long)(BLOCK_X / VEC) * (long)num_blk_x;
@@ -608,18 +602,18 @@ int main(int argc, char **argv)
 		size_t localSize[3] = {(size_t)(BLOCK_X / VEC), 1, 1};
 		size_t globalSize[3] = {(size_t)total_index, 1, 1};
 
-		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 1, sizeof(cl_mem  ), (void*) &deviceC   ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 3, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 4, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel , 3, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 3, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 4, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 5, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 5, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
 		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x;
 
@@ -628,7 +622,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 3, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 4, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 5, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1Kernel, 5, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
@@ -636,12 +630,12 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 3, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 4, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 5, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 6, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r2w1Kernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
 #elif CHSTD
-	int valid_blk_x = BLOCK_X - overlap;
-	long exit_index = (array_size % valid_blk_x == 0) ? array_size : array_size + valid_blk_x - (array_size % valid_blk_x);
-	int num_blk_x = exit_index / valid_blk_x;
+	int valid_blk_x = BLOCK_X - 2 * halo;
+	long last_x = (array_size % valid_blk_x == 0) ? array_size : array_size + valid_blk_x - (array_size % valid_blk_x);
+	int num_blk_x = last_x / valid_blk_x;
 
 	#ifdef NDR
 		long total_index = (long)(BLOCK_X / VEC) * (long)num_blk_x;
@@ -653,21 +647,21 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 2, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 3, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 3, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 3, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 3, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 3, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 4, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 3, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 3, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
 		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x;
 
@@ -675,24 +669,24 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 2, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 3, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 4, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 3, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 4, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 4, sizeof(cl_int  ), (void*) &halo      ) );
 
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 3, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 4, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 5, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r2w1ReadKernel , 5, sizeof(cl_int  ), (void*) &halo      ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
 		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 3, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 4, sizeof(cl_int  ), (void*) &overlap   ) );
+		CL_SAFE_CALL( clSetKernelArg(r2w1WriteKernel, 4, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
 #elif BLK2D
 	int valid_blk_x = BLOCK_X - 2 * halo;
@@ -1210,24 +1204,25 @@ int main(int argc, char **argv)
 #endif
 
 	if (verify || verbose) printf("\n");
-#ifdef STD
+#if defined(STD) || defined(CHSTD)
 	avgr1w1Time = totalr1w1Time / (double)iter;
 	avgr2w1Time = totalr2w1Time / (double)iter;
-	long totalSize_B = ((num_blk_x * BLOCK_X) - (exit_index + overlap - array_size)) * sizeof(float);
+	int extra_halo_x = ((array_size % valid_blk_x >= halo) || (array_size % valid_blk_x == 0)) ? 0 : halo - (array_size % valid_blk_x); // in case the halo width in the last block is not fully traversed
+	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - array_size) - extra_halo_x) * sizeof(float);
 	printf("r1w1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgr1w1Time), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgr1w1Time), avgr1w1Time);
 	printf("r2w1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgr2w1Time ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgr2w1Time ), avgr2w1Time);
 #elif defined(BLK2D) || defined(CHBLK2D)
 	avgr1w1Time = totalr1w1Time / (double)iter;
 	avgr2w1Time = totalr2w1Time / (double)iter;
-	int extra_halo_x = (dim_x % valid_blk_x >= halo || dim_x % valid_blk_x == 0) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
+	int extra_halo_x = ((dim_x % valid_blk_x) >= halo || (dim_x % valid_blk_x == 0)) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
 	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - dim_x) - extra_halo_x) * dim_y * sizeof(float);
 	printf("r1w1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgr1w1Time), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgr1w1Time), avgr1w1Time);
 	printf("r2w1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgr2w1Time ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgr2w1Time ), avgr2w1Time);
 #elif defined(BLK3D) || defined(CHBLK3D)
 	avgr1w1Time = totalr1w1Time / (double)iter;
 	avgr2w1Time = totalr2w1Time / (double)iter;
-	int extra_halo_x = (dim_x % valid_blk_x >= halo || dim_x % valid_blk_x == 0) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
-	int extra_halo_y = (dim_y % valid_blk_y >= halo || dim_y % valid_blk_y == 0) ? 0 : halo - (dim_y % valid_blk_y); // in case the halo width in the last block is not fully traversed
+	int extra_halo_x = ((dim_x % valid_blk_x >= halo) || (dim_x % valid_blk_x == 0)) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
+	int extra_halo_y = ((dim_y % valid_blk_y >= halo) || (dim_y % valid_blk_y == 0)) ? 0 : halo - (dim_y % valid_blk_y); // in case the halo width in the last block is not fully traversed
 	long totalSize_B = ((num_blk_x * BLOCK_X) * (num_blk_y * BLOCK_X) - ((last_x + 2 * halo) * (last_y + 2 * halo) - ((dim_x - extra_halo_x) * (dim_y - extra_halo_y))) - (num_blk_x - 1 + num_blk_y - 1) * (2 * halo) * halo - ((last_x + halo + extra_halo_x - dim_x) * (num_blk_y - 1) + (last_y + halo + extra_halo_y - dim_y) * (num_blk_x - 1)) * 2 * halo) * dim_z * sizeof(float);
 	printf("r1w1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgr1w1Time), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgr1w1Time), avgr1w1Time);
 	printf("r2w1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgr2w1Time ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgr2w1Time ), avgr2w1Time);

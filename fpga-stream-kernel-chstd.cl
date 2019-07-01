@@ -27,13 +27,13 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void r1w1_read(__global const float* restrict a,
                                  const int             pad,
-                                 const long            size,
-                                 const int             overlap)
+                                 const long            dim_x,
+                                 const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	long bx = gidx * (BLOCK_X - overlap);
-	long gx = bx + x;
+	long bx = gidx * (BLOCK_X - 2 * halo);
+	long gx = bx + x - halo;
 	CHAN_WIDTH temp;
 
 	#pragma unroll
@@ -41,7 +41,7 @@ __kernel void r1w1_read(__global const float* restrict a,
 	{
 		long real_x = gx + i;
 		long index = pad + real_x;
-		if (real_x < size)
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			temp.data[i] = a[index];
 		}
@@ -53,13 +53,13 @@ __kernel void r1w1_read(__global const float* restrict a,
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void r1w1_write(__global       float* restrict c,
                                   const int             pad,
-                                  const long            size,
-                                  const int             overlap)
+                                  const long            dim_x,
+                                  const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	long bx = gidx * (BLOCK_X - overlap);
-	long gx = bx + x;
+	long bx = gidx * (BLOCK_X - 2 * halo);
+	long gx = bx + x - halo;
 	CHAN_WIDTH temp;
 
 	temp = read_channel(ch_copy);
@@ -69,7 +69,7 @@ __kernel void r1w1_write(__global       float* restrict c,
 	{
 		long real_x = gx + i;
 		long index = pad + real_x;
-		if (real_x < size)
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			c[index] = temp.data[i];
 		}
@@ -80,13 +80,13 @@ __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void r2w1_read(__global const float* restrict a,
                         __global const float* restrict b,
                                  const int             pad,
-                                 const long            size,
-                                 const int             overlap)
+                                 const long            dim_x,
+                                 const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	long bx = gidx * (BLOCK_X - overlap);
-	long gx = bx + x;
+	long bx = gidx * (BLOCK_X - 2 * halo);
+	long gx = bx + x - halo;
 	CHAN_WIDTH temp_a, temp_b;
 
 	#pragma unroll
@@ -94,7 +94,7 @@ __kernel void r2w1_read(__global const float* restrict a,
 	{
 		long real_x = gx + i;
 		long index = pad + real_x;
-		if (real_x < size)
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			temp_a.data[i] = a[index];
 			temp_b.data[i] = b[index];
@@ -108,13 +108,13 @@ __kernel void r2w1_read(__global const float* restrict a,
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void r2w1_write(__global       float* restrict c,
                                   const int             pad,
-                                  const long            size,
-                                  const int             overlap)
+                                  const long            dim_x,
+                                  const int             halo)
 {
 	int x = get_local_id(0) * VEC;
 	int gidx = get_group_id(0);
-	long bx = gidx * (BLOCK_X - overlap);
-	long gx = bx + x;
+	long bx = gidx * (BLOCK_X - 2 * halo);
+	long gx = bx + x - halo;
 	CHAN_WIDTH temp_a, temp_b;
 
 	temp_a = read_channel(ch_mac_a);
@@ -125,7 +125,7 @@ __kernel void r2w1_write(__global       float* restrict c,
 	{
 		long real_x = gx + i;
 		long index = pad + real_x;
-		if (real_x < size)
+		if (real_x >= 0 && real_x < dim_x)
 		{
 			c[index] = temp_a.data[i] + temp_b.data[i];
 		}
@@ -137,9 +137,9 @@ __kernel void r2w1_write(__global       float* restrict c,
 __attribute__((max_global_work_dim(0)))
 __kernel void r1w1_read(__global const float* restrict a,
                                  const int             pad,
-                                 const long            size,
+                                 const long            dim_x,
                                  const long            exit,
-                                 const int             overlap)
+                                 const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -150,13 +150,13 @@ __kernel void r1w1_read(__global const float* restrict a,
 		cond++;
 
 		CHAN_WIDTH temp;
-		long gx = bx + x;
+		long gx = bx + x - halo;
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
 			long real_x = gx + i;
 			long index = pad + real_x;
-			if (real_x < size)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				temp.data[i] = a[index];
 			}
@@ -168,7 +168,7 @@ __kernel void r1w1_read(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - overlap;
+			bx += BLOCK_X - halo;
 		}
 	}
 }
@@ -176,9 +176,9 @@ __kernel void r1w1_read(__global const float* restrict a,
 __attribute__((max_global_work_dim(0)))
 __kernel void r1w1_write(__global       float* restrict c,
                                   const int             pad,
-                                  const long            size,
+                                  const long            dim_x,
                                   const long            exit,
-                                  const int             overlap)
+                                  const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -190,13 +190,13 @@ __kernel void r1w1_write(__global       float* restrict c,
 
 		CHAN_WIDTH temp;
 		temp = read_channel(ch_copy);
-		long gx = bx + x;
+		long gx = bx + x - halo;
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
 			long real_x = gx + i;
 			long index = pad + real_x;
-			if (real_x < size)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				c[index] = temp.data[i];
 			}
@@ -206,7 +206,7 @@ __kernel void r1w1_write(__global       float* restrict c,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - overlap;
+			bx += BLOCK_X - halo;
 		}
 	}
 }
@@ -215,9 +215,9 @@ __attribute__((max_global_work_dim(0)))
 __kernel void r2w1_read(__global const float* restrict a,
                         __global const float* restrict b,
                                  const int             pad,
-                                 const long            size,
+                                 const long            dim_x,
                                  const long            exit,
-                                 const int             overlap)
+                                 const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -228,13 +228,13 @@ __kernel void r2w1_read(__global const float* restrict a,
 		cond++;
 
 		CHAN_WIDTH temp_a, temp_b;
-		long gx = bx + x;
+		long gx = bx + x - halo;
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
 			long real_x = gx + i;
 			long index = pad + real_x;
-			if (real_x < size)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				temp_a.data[i] = a[index];
 				temp_b.data[i] = b[index];
@@ -248,7 +248,7 @@ __kernel void r2w1_read(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - overlap;
+			bx += BLOCK_X - halo;
 		}
 	}
 }
@@ -256,9 +256,9 @@ __kernel void r2w1_read(__global const float* restrict a,
 __attribute__((max_global_work_dim(0)))
 __kernel void r2w1_write(__global       float* restrict c,
                                   const int             pad,
-                                  const long            size,
+                                  const long            dim_x,
                                   const long            exit,
-                                  const int             overlap)
+                                  const int             halo)
 {
 	long cond = 0;
 	int x = 0;
@@ -271,13 +271,13 @@ __kernel void r2w1_write(__global       float* restrict c,
 		CHAN_WIDTH temp_a, temp_b;
 		temp_a = read_channel(ch_mac_a);
 		temp_b = read_channel(ch_mac_b);
-		long gx = bx + x;
+		long gx = bx + x - halo;
 		#pragma unroll
 		for (int i = 0; i < VEC; i++)
 		{
 			long real_x = gx + i;
 			long index = pad + real_x;
-			if (real_x < size)
+			if (real_x >= 0 && real_x < dim_x)
 			{
 				c[index] = temp_a.data[i] + temp_b.data[i];
 			}
@@ -287,7 +287,7 @@ __kernel void r2w1_write(__global       float* restrict c,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - overlap;
+			bx += BLOCK_X - halo;
 		}
 	}
 }
