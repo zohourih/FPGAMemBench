@@ -14,6 +14,7 @@
 #endif
 
 #define HALF_VEC VEC/2
+#define WGS 64
 
 typedef struct
 {
