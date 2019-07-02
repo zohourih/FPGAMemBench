@@ -187,15 +187,15 @@ int main(int argc, char **argv)
 
 	// load kernel file and build program
 #ifdef INTEL_FPGA
-		size_t kernelFileSize;
-		char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
-		cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
-		if(error != CL_SUCCESS)
-		{
-			printf("ERROR: clCreateProgramWithBinary() failed with error: ");
-			display_error_message(error, stdout);
-			return -1;
-		}
+	size_t kernelFileSize;
+	char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
+	cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
+	if(error != CL_SUCCESS)
+	{
+		printf("ERROR: clCreateProgramWithBinary() failed with error: ");
+		display_error_message(error, stdout);
+		return -1;
+	}
 #else // for CPU/GPUs
 	#if defined(STD)
 		size_t kernelFileSize;
