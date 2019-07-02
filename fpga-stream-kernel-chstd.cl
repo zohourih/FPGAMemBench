@@ -168,7 +168,7 @@ __kernel void r1w1_read(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - halo;
+			bx += BLOCK_X - 2 * halo;
 		}
 	}
 }
@@ -206,7 +206,7 @@ __kernel void r1w1_write(__global       float* restrict c,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - halo;
+			bx += BLOCK_X - 2 * halo;
 		}
 	}
 }
@@ -248,7 +248,7 @@ __kernel void r2w1_read(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - halo;
+			bx += BLOCK_X - 2 * halo;
 		}
 	}
 }
@@ -287,7 +287,7 @@ __kernel void r2w1_write(__global       float* restrict c,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - halo;
+			bx += BLOCK_X - 2 * halo;
 		}
 	}
 }

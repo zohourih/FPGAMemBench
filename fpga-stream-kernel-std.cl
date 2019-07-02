@@ -88,7 +88,7 @@ __kernel void r1w1(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - halo;
+			bx += BLOCK_X - 2 * halo;
 		}
 	}
 }
@@ -126,7 +126,7 @@ __kernel void r2w1(__global const float* restrict a,
 
 		if (x == 0)
 		{
-			bx += BLOCK_X - halo;
+			bx += BLOCK_X - 2 * halo;
 		}
 	}
 }
