@@ -29,9 +29,7 @@ ifeq ($(INTEL_FPGA),1)
 		HOST_FLAGS += -DLEGACY
 	endif
 
-	ifdef HOST_ONLY
-		KERNEL_BINARY_STD = 
-	else
+	ifndef HOST_ONLY
 		KERNEL_BINARY_STD = $(KERNEL)-std.aocx
 		KERNEL_BINARY_CHSTD = $(KERNEL)-chstd.aocx
 		KERNEL_BINARY_BLK2D = $(KERNEL)-blk2d.aocx
@@ -41,8 +39,14 @@ ifeq ($(INTEL_FPGA),1)
 		KERNEL_BINARY_SCH = $(shell echo "fpga_1 fpga_2")
 	endif
 
-	ifdef KERNEL_ONLY
-		HOST_BINARY = 
+	ifndef KERNEL_ONLY
+		HOST_FILE_STD = $(HOST)-std.exe
+		HOST_FILE_CHSTD = $(HOST)-std.exe
+		HOST_FILE_BLK2D = $(HOST)-blk2d.exe
+		HOST_FILE_CHBLK2D = $(HOST)-blk2d.exe
+		HOST_FILE_BLK3D = $(HOST)-blk3d.exe
+		HOST_FILE_CHBLK3D = $(HOST)-blk3d.exe
+		HOST_FILE_SCH = $(HOST)-sch.exe
 	endif
 
 	ifdef EMULATOR
@@ -120,39 +124,32 @@ endif
 
 std: HOST_FLAGS += -DSTD -DBLOCK_X=$(BLOCK_X)
 std: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
-std: $(eval HOST_FILE = $(HOST)-std.c)
-std: $(HOST_BINARY) $(KERNEL_BINARY_STD)
+std: $(HOST_FILE_STD) $(KERNEL_BINARY_STD)
 
 chstd: HOST_FLAGS += -DCHSTD -DBLOCK_X=$(BLOCK_X)
 chstd: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
-chstd: $(eval HOST_FILE = $(HOST)-std.c)
-chstd: $(HOST_BINARY) $(KERNEL_BINARY_CHSTD)
+chstd: $(HOST_FILE_CHSTD) $(KERNEL_BINARY_CHSTD)
 
 blk2d: HOST_FLAGS += -DBLK2D -DBLOCK_X=$(BLOCK_X)
 blk2d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
-blk2d: $(eval HOST_FILE = $(HOST)-blk2d.c)
-blk2d: $(HOST_BINARY) $(KERNEL_BINARY_BLK2D)
+blk2d: $(HOST_FILE_BLK2D) $(KERNEL_BINARY_BLK2D)
 
 chblk2d: HOST_FLAGS += -DCHBLK2D -DBLOCK_X=$(BLOCK_X)
 chblk2d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
-chblk2d: $(eval HOST_FILE = $(HOST)-blk2d.c)
-chblk2d: $(HOST_BINARY) $(KERNEL_BINARY_CHBLK2D)
+chblk2d: $(HOST_FILE_CHBLK2D) $(KERNEL_BINARY_CHBLK2D)
 
 blk3d: HOST_FLAGS += -DBLK3D -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
 blk3d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
-blk3d: $(eval HOST_FILE = $(HOST)-blk3d.c)
-blk3d: $(HOST_BINARY) $(KERNEL_BINARY_BLK3D)
+blk3d: $(HOST_FILE_BLK3D) $(KERNEL_BINARY_BLK3D)
 
 chblk3d: HOST_FLAGS += -DCHBLK3D -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
 chblk3d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
-chblk3d: $(eval HOST_FILE = $(HOST)-blk3d.c)
-chblk3d: $(HOST_BINARY) $(KERNEL_BINARY_CHBLK3D)
+chblk3d: $(HOST_FILE_CHBLK3D) $(KERNEL_BINARY_CHBLK3D)
 
 sch: HOST_FLAGS += -DSCH
-sch: $(eval HOST_FILE = $(HOST)-sch.c)
-sch: $(HOST_BINARY) $(KERNEL_BINARY_SCH)
+sch: $(HOST_FILE_SCH) $(KERNEL_BINARY_SCH)
 
-fpga-stream: $(HOST_FILE)
+%.exe: %.c
 	$(HOST_COMPILER) $(HOST_FLAGS) $< $(INC) $(LIB) -o $(HOST_BINARY)
 
 %.aocx: KERNEL_BINARY = $(basename $@)_$(KERNEL_CONFIG)$(EXTRA_CONFIG)
