@@ -1,5 +1,5 @@
 //====================================================================================================================================
-// Memory bandwidth benchmark host for OpenCL-capable FPGAs: Standard
+// Memory bandwidth benchmark host for OpenCL-capable FPGAs: Standard/Channelized
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 

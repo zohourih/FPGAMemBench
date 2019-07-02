@@ -1,5 +1,5 @@
 //====================================================================================================================================
-// Memory bandwidth benchmark host for OpenCL-capable FPGAs: 2D overlapped blocking
+// Memory bandwidth benchmark host for OpenCL-capable FPGAs: Standard/Channelized 2D overlapped blocking
 // (c) 2019, Hamid Reza Zohouri @ Tokyo Institute of Technology
 //====================================================================================================================================
 
