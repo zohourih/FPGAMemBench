@@ -1,6 +1,6 @@
 NAME = fpga-stream
-HOST_FILE = $(NAME).c
 HOST_BINARY = $(NAME)
+HOST = $(NAME)-host
 KERNEL = $(NAME)-kernel
 HOST_COMPILER = gcc
 HOST_FLAGS = -O3 -Wall -Wextra -lrt -fopenmp
@@ -104,10 +104,6 @@ KERNEL_FLAGS += -DVEC=$(VEC)
 ifeq ($(NDR),1)
 	HOST_FLAGS += -DNDR
 	KERNEL_FLAGS += -DNDR
-
-	WGS ?= 64
-	HOST_FLAGS += -DWGS=$(WGS)
-	KERNEL_FLAGS += -DWGS=$(WGS)
 	
 	KERNEL_CONFIG = NDR_VEC$(VEC)
 else
@@ -124,29 +120,36 @@ endif
 
 std: HOST_FLAGS += -DSTD -DBLOCK_X=$(BLOCK_X)
 std: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
+std: $(eval HOST_FILE = $(HOST)-std.c)
 std: $(HOST_BINARY) $(KERNEL_BINARY_STD)
 
 chstd: HOST_FLAGS += -DCHSTD -DBLOCK_X=$(BLOCK_X)
 chstd: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
+chstd: $(eval HOST_FILE = $(HOST)-std.c)
 chstd: $(HOST_BINARY) $(KERNEL_BINARY_CHSTD)
 
 blk2d: HOST_FLAGS += -DBLK2D -DBLOCK_X=$(BLOCK_X)
 blk2d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
+blk2d: $(eval HOST_FILE = $(HOST)-blk2d.c)
 blk2d: $(HOST_BINARY) $(KERNEL_BINARY_BLK2D)
 
 chblk2d: HOST_FLAGS += -DCHBLK2D -DBLOCK_X=$(BLOCK_X)
 chblk2d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X)
+chblk2d: $(eval HOST_FILE = $(HOST)-blk2d.c)
 chblk2d: $(HOST_BINARY) $(KERNEL_BINARY_CHBLK2D)
 
 blk3d: HOST_FLAGS += -DBLK3D -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
 blk3d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
+blk3d: $(eval HOST_FILE = $(HOST)-blk3d.c)
 blk3d: $(HOST_BINARY) $(KERNEL_BINARY_BLK3D)
 
 chblk3d: HOST_FLAGS += -DCHBLK3D -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
 chblk3d: KERNEL_FLAGS += -DBLOCK_X=$(BLOCK_X) -DBLOCK_Y=$(BLOCK_Y)
+chblk3d: $(eval HOST_FILE = $(HOST)-blk3d.c)
 chblk3d: $(HOST_BINARY) $(KERNEL_BINARY_CHBLK3D)
 
 sch: HOST_FLAGS += -DSCH
+sch: $(eval HOST_FILE = $(HOST)-sch.c)
 sch: $(HOST_BINARY) $(KERNEL_BINARY_SCH)
 
 fpga-stream: $(HOST_FILE)
