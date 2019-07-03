@@ -456,40 +456,40 @@ int main(int argc, char **argv)
 		size_t localSize[3] = {(size_t)(BLOCK_X / VEC), 1, 1};
 		size_t globalSize[3] = {(size_t)total_index, 1, 1};
 
-		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel , 1, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel , 3, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel, 1, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel, 3, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R1W0Kernel, 4, sizeof(cl_int  ), (void*) &halo      ) );
 
-		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel , 2, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel , 3, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel , 4, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel, 1, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel, 2, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel, 3, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel, 4, sizeof(cl_int  ), (void*) &halo      ) );
 
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 2, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 3, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 4, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 5, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 2, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 3, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 4, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 5, sizeof(cl_int  ), (void*) &halo      ) );
 
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 5, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 5, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 6, sizeof(cl_int  ), (void*) &halo      ) );
 
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 5, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 5, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 6, sizeof(cl_int  ), (void*) &halo      ) );
 	#else
 		long loop_exit = (long)(BLOCK_X / VEC) * (long)num_blk_x;
 
@@ -507,31 +507,31 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel, 4, sizeof(cl_long ), (void*) &loop_exit ) );
 		CL_SAFE_CALL( clSetKernelArg(R1W1Kernel, 5, sizeof(cl_int  ), (void*) &halo      ) );
 
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 2, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 3, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 4, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 5, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel , 6, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 2, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 3, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 4, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 5, sizeof(cl_long ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W1Kernel, 6, sizeof(cl_int  ), (void*) &halo      ) );
 
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 5, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 6, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel , 7, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 5, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 6, sizeof(cl_long ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(R3W1Kernel, 7, sizeof(cl_int  ), (void*) &halo      ) );
 
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 4, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 5, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 6, sizeof(cl_long ), (void*) &loop_exit ) );
-		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel , 7, sizeof(cl_int  ), (void*) &halo      ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 1, sizeof(cl_mem  ), (void*) &deviceB   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 2, sizeof(cl_mem  ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 3, sizeof(cl_mem  ), (void*) &deviceD   ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 4, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 5, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 6, sizeof(cl_long ), (void*) &loop_exit ) );
+		CL_SAFE_CALL( clSetKernelArg(R2W2Kernel, 7, sizeof(cl_int  ), (void*) &halo      ) );
 	#endif
 #elif CHSTD
 	int valid_blk_x = BLOCK_X - 2 * halo;
@@ -793,10 +793,10 @@ int main(int argc, char **argv)
 		clFinish(queue);
 #elif defined(CHSTD)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R2W1Kernel[0] , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R2W1Kernel[0], DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, R2W1Kernel[1], DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
-		CL_SAFE_CALL( clEnqueueTask(queue_read , R2W1Kernel[0] , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_read , R2W1Kernel[0], 0, NULL, NULL) );
 		CL_SAFE_CALL( clEnqueueTask(queue_write, R2W1Kernel[1], 0, NULL, NULL) );
 	#endif
 		clFinish(queue_write);
@@ -860,10 +860,10 @@ int main(int argc, char **argv)
 		clFinish(queue);
 #elif defined(CHSTD)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R3W1Kernel[0] , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R3W1Kernel[0], DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, R3W1Kernel[1], DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
-		CL_SAFE_CALL( clEnqueueTask(queue_read , R3W1Kernel[0] , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_read , R3W1Kernel[0], 0, NULL, NULL) );
 		CL_SAFE_CALL( clEnqueueTask(queue_write, R3W1Kernel[1], 0, NULL, NULL) );
 	#endif
 		clFinish(queue_write);
@@ -927,10 +927,10 @@ int main(int argc, char **argv)
 		clFinish(queue);
 #elif defined(CHSTD)
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R2W2Kernel[0] , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R2W2Kernel[0], DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, R2W2Kernel[1], DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
-		CL_SAFE_CALL( clEnqueueTask(queue_read , R2W2Kernel[0] , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_read , R2W2Kernel[0], 0, NULL, NULL) );
 		CL_SAFE_CALL( clEnqueueTask(queue_write, R2W2Kernel[1], 0, NULL, NULL) );
 	#endif
 		clFinish(queue_write);
@@ -950,7 +950,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue, deviceD, 1, 0, padded_size_Byte, hostD, 0, 0, 0));
 		clFinish(queue);
 	#elif defined(CHSTD)
-		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceD, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
+		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceD, 1, 0, padded_size_Byte, hostD, 0, 0, 0));
 		clFinish(queue_write);
 	#endif
@@ -987,7 +987,9 @@ int main(int argc, char **argv)
 
 	int extra_halo_x = ((array_size % valid_blk_x >= halo) || (array_size % valid_blk_x == 0)) ? 0 : halo - (array_size % valid_blk_x); // in case the halo width in the last block is not fully traversed
 	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - array_size) - extra_halo_x) * sizeof(float);
+	long redundancy_B = totalSize_B - array_size * sizeof(float);
 
+	printf("Redundancy: %.2f%%\n", (float)redundancy_B/(float)totalSize_B);
 	printf("R1W0: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(1 * totalSize_B) / (1.0E6 * avgR1W0Time), (double)(1 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR1W0Time), avgR1W0Time);
 	printf("R1W1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgR1W1Time), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR1W1Time), avgR1W1Time);
 	printf("R2W1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgR2W1Time), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR2W1Time), avgR2W1Time);
