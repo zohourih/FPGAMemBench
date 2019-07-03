@@ -987,7 +987,7 @@ int main(int argc, char **argv)
 
 	int extra_halo_x = ((array_size % valid_blk_x >= halo) || (array_size % valid_blk_x == 0)) ? 0 : halo - (array_size % valid_blk_x); // in case the halo width in the last block is not fully traversed
 	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - array_size) - extra_halo_x) * sizeof(float);
-	long redundancy_B = totalSize_B - array_size * sizeof(float);
+	long redundancy_B = totalSize_B - size_B;
 
 	printf("Redundancy: %.2f%%\n", (float)redundancy_B/(float)totalSize_B);
 	printf("R1W0: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(1 * totalSize_B) / (1.0E6 * avgR1W0Time), (double)(1 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR1W0Time), avgR1W0Time);

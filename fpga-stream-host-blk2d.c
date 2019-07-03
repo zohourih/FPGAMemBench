@@ -663,8 +663,12 @@ int main(int argc, char **argv)
 
 	avgR1W1Time = totalR1W1Time / (double)iter;
 	avgR2W1Time = totalR2W1Time / (double)iter;
+
 	int extra_halo_x = ((dim_x % valid_blk_x) >= halo || (dim_x % valid_blk_x == 0)) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
 	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - dim_x) - extra_halo_x) * dim_y * sizeof(float);
+	long redundancy_B = totalSize_B - size_B;
+
+	printf("Redundancy: %.2f%%\n", (float)redundancy_B/(float)totalSize_B);
 	printf("R1W1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgR1W1Time), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR1W1Time), avgR1W1Time);
 	printf("R2W1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgR2W1Time ), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR2W1Time ), avgR2W1Time);
 
