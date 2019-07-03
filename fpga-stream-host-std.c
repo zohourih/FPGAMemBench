@@ -989,7 +989,7 @@ int main(int argc, char **argv)
 	long totalSize_B = ((num_blk_x * BLOCK_X) - (last_x + 2 * halo - array_size) - extra_halo_x) * sizeof(float);
 	long redundancy_B = totalSize_B - size_B;
 
-	printf("Redundancy: %.2f%%\n", (float)redundancy_B/(float)totalSize_B);
+	printf("Redundancy: %.2f%%\n", ((float)redundancy_B * 100.0)/(float)totalSize_B);
 	printf("R1W0: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(1 * totalSize_B) / (1.0E6 * avgR1W0Time), (double)(1 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR1W0Time), avgR1W0Time);
 	printf("R1W1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * totalSize_B) / (1.0E6 * avgR1W1Time), (double)(2 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR1W1Time), avgR1W1Time);
 	printf("R2W1: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(3 * totalSize_B) / (1.0E6 * avgR2W1Time), (double)(3 * totalSize_B * 1000.0) / (pow(1024.0, 3) * avgR2W1Time), avgR2W1Time);

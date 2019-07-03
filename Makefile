@@ -90,12 +90,22 @@ ifeq ($(INTEL_FPGA),1)
 	endif
 else ifeq ($(AMD),1)
 	KERNEL_BINARY_STD =
+	KERNEL_BINARY_BLK2D =
+	KERNEL_BINARY_BLK3D =
+	HOST_FILE_STD = $(HOST)-std.exe
+	HOST_FILE_BLK2D = $(HOST)-blk2d.exe
+	HOST_FILE_BLK3D = $(HOST)-blk3d.exe
 	OPENCL_DIR = $(AMDAPPSDKROOT)
 	INC += -I$(OPENCL_DIR)/include/
 	LIB += -L$(OPENCL_DIR)/lib/x86_64/ -lOpenCL
 	HOST_FLAGS += -Wno-deprecated-declarations
 else ifeq ($(NVIDIA),1)
 	KERNEL_BINARY_STD =
+	KERNEL_BINARY_BLK2D =
+	KERNEL_BINARY_BLK3D =
+	HOST_FILE_STD = $(HOST)-std.exe
+	HOST_FILE_BLK2D = $(HOST)-blk2d.exe
+	HOST_FILE_BLK3D = $(HOST)-blk3d.exe
 	INC += -I$(CUDA_DIR)/include/
 	LIB += -L$(CUDA_DIR)/lib64/ -lOpenCL
 	HOST_FLAGS += -Wno-deprecated-declarations
