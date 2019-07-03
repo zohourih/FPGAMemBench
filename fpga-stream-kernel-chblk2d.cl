@@ -24,7 +24,7 @@ channel CHAN_WIDTH ch_mac_b __attribute__((depth(16)));
 
 #ifdef NDR //NDRange kernels
 
-__kernel void r1w1_read(__global const float* restrict a,
+__kernel void R1W1_read(__global const float* restrict a,
                                  const int             pad,
                                  const int             pad_x,
                                  const int             dim_x,
@@ -51,7 +51,7 @@ __kernel void r1w1_read(__global const float* restrict a,
 	write_channel(ch_copy, temp);
 }
 
-__kernel void r1w1_write(__global       float* restrict c, 
+__kernel void R1W1_write(__global       float* restrict c, 
                                   const int             pad,
                                   const int             pad_x,
                                   const int             dim_x,
@@ -78,7 +78,7 @@ __kernel void r1w1_write(__global       float* restrict c,
 	}
 }
 
-__kernel void r2w1_read(__global const float* restrict a,
+__kernel void R2W1_read(__global const float* restrict a,
                         __global const float* restrict b,
                                  const int             pad,
                                  const int             pad_x,
@@ -108,7 +108,7 @@ __kernel void r2w1_read(__global const float* restrict a,
 	write_channel(ch_mac_b, temp_b);
 }
 
-__kernel void r2w1_write(__global       float* restrict c,
+__kernel void R2W1_write(__global       float* restrict c,
                                   const int             pad,
                                   const int             pad_x,
                                   const int             dim_x,
@@ -139,7 +139,7 @@ __kernel void r2w1_write(__global       float* restrict c,
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r1w1_read(__global const float* restrict a,
+__kernel void R1W1_read(__global const float* restrict a,
                                  const int             pad,
                                  const int             pad_x,
                                  const int             dim_x,
@@ -189,7 +189,7 @@ __kernel void r1w1_read(__global const float* restrict a,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r1w1_write(__global       float* restrict c,
+__kernel void R1W1_write(__global       float* restrict c,
                                   const int             pad,
                                   const int             pad_x,
                                   const int             dim_x,
@@ -238,7 +238,7 @@ __kernel void r1w1_write(__global       float* restrict c,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r2w1_read(__global const float* restrict a,
+__kernel void R2W1_read(__global const float* restrict a,
                         __global const float* restrict b,
                                  const int             pad,
                                  const int             pad_x,
@@ -291,7 +291,7 @@ __kernel void r2w1_read(__global const float* restrict a,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r2w1_write(__global       float* restrict c,
+__kernel void R2W1_write(__global       float* restrict c,
                                   const int             pad,
                                   const int             pad_x,
                                   const int             dim_x,

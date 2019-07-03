@@ -5,7 +5,7 @@
 
 #ifdef NDR //NDRange kernels
 
-__kernel void r1w1(__global const float* restrict a,
+__kernel void R1W1(__global const float* restrict a,
                    __global       float* restrict c,
                             const int             pad,
                             const int             pad_x,
@@ -30,7 +30,7 @@ __kernel void r1w1(__global const float* restrict a,
 	}
 }
 
-__kernel void r2w1(__global const float* restrict a,
+__kernel void R2W1(__global const float* restrict a,
                    __global const float* restrict b,
                    __global       float* restrict c,
                             const int             pad,
@@ -59,7 +59,7 @@ __kernel void r2w1(__global const float* restrict a,
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r1w1(__global const float* restrict a,
+__kernel void R1W1(__global const float* restrict a,
                    __global       float* restrict c,
                             const int             pad,
                             const int             pad_x,
@@ -107,7 +107,7 @@ __kernel void r1w1(__global const float* restrict a,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r2w1(__global const float* restrict a,
+__kernel void R2W1(__global const float* restrict a,
                    __global const float* restrict b,
                    __global       float* restrict c,
                             const int    pad,

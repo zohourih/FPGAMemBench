@@ -6,7 +6,7 @@
 #ifdef NDR //NDRange kernels
 
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
-__kernel void r1w1(__global const float* restrict a,
+__kernel void R1W1(__global const float* restrict a,
                    __global       float* restrict c,
                             const int             pad,
                             const long            dim_x,
@@ -30,7 +30,7 @@ __kernel void r1w1(__global const float* restrict a,
 }
 
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
-__kernel void r2w1(__global const float* restrict a,
+__kernel void R2W1(__global const float* restrict a,
                    __global const float* restrict b,
                    __global       float* restrict c,
                             const int             pad,
@@ -57,7 +57,7 @@ __kernel void r2w1(__global const float* restrict a,
 #else // Single Work-item kernels
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r1w1(__global const float* restrict a,
+__kernel void R1W1(__global const float* restrict a,
                    __global       float* restrict c,
                             const int             pad,
                             const long            dim_x,
@@ -94,7 +94,7 @@ __kernel void r1w1(__global const float* restrict a,
 }
 
 __attribute__((max_global_work_dim(0)))
-__kernel void r2w1(__global const float* restrict a,
+__kernel void R2W1(__global const float* restrict a,
                    __global const float* restrict b,
                    __global       float* restrict c,
                             const int             pad,

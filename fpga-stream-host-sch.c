@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 
 	// timing measurement
 	TimeStamp start, end;
-	double totalr1w1Time = 0, avgr1w1Time = 0;
+	double totalR1W1Time = 0, avgR1W1Time = 0;
 
 	// for OpenCL errors
 	cl_int error = 0;
@@ -199,20 +199,20 @@ int main(int argc, char **argv)
 	clBuildProgram_SAFE(progFPGA2, 1, &deviceList[1], clOptions, NULL, NULL);
 
 	// create kernel objects
-	cl_kernel r1w1ReadKernel, r1w1WriteKernel;
+	cl_kernel R1W1ReadKernel, R1W1WriteKernel;
 
-	r1w1ReadKernel = clCreateKernel(progFPGA1, "r1w1_read", &error);
+	R1W1ReadKernel = clCreateKernel(progFPGA1, "R1W1_read", &error);
 	if(error != CL_SUCCESS)
 	{
-		printf("ERROR: clCreateKernel(r1w1_read) failed with error: ");
+		printf("ERROR: clCreateKernel(R1W1_read) failed with error: ");
 		display_error_message(error, stdout);
 		return -1;
 	}
 
-	r1w1WriteKernel= clCreateKernel(progFPGA2, "r1w1_write", &error);
+	R1W1WriteKernel= clCreateKernel(progFPGA2, "R1W1_write", &error);
 	if(error != CL_SUCCESS)
 	{
-		printf("ERROR: clCreateKernel(r1w1_write) failed with error: ");
+		printf("ERROR: clCreateKernel(R1W1_write) failed with error: ");
 		display_error_message(error, stdout);
 		return -1;
 	}
@@ -280,50 +280,50 @@ int main(int argc, char **argv)
 		size_t localSize[3] = {(size_t)WGS, 1, 1};
 		size_t globalSize[3] = {(size_t)(array_size / VEC), 1, 1};
 
-		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1ReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1ReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
 	#else
-		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1ReadKernel , 2, sizeof(cl_long ), (void*) &array_size) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
-		CL_SAFE_CALL( clSetKernelArg(r1w1WriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1ReadKernel , 0, sizeof(cl_mem  ), (void*) &deviceA   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1ReadKernel , 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1ReadKernel , 2, sizeof(cl_long ), (void*) &array_size) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1WriteKernel, 0, sizeof(cl_mem  ), (void*) &deviceC   ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1WriteKernel, 1, sizeof(cl_int  ), (void*) &pad       ) );
+		CL_SAFE_CALL( clSetKernelArg(R1W1WriteKernel, 2, sizeof(cl_long ), (void*) &array_size) );
 	#endif
 
 	// device warm-up
 	if (verbose) printf("Device warm-up...\n");
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , r1w1ReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, r1w1WriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R1W1ReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, R1W1WriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
-		CL_SAFE_CALL( clEnqueueTask(queue_read , r1w1ReadKernel , 0, NULL, NULL) );
-		CL_SAFE_CALL( clEnqueueTask(queue_write, r1w1WriteKernel, 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_read , R1W1ReadKernel , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_write, R1W1WriteKernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue_write);
 
-	// r1w1 kernel
-	if (verify || verbose) printf("Executing \"r1w1\" kernel...\n");
+	// R1W1 kernel
+	if (verify || verbose) printf("Executing \"R1W1\" kernel...\n");
 	for (int i = 0; i < iter; i++)
 	{
 		GetTime(start);
 
 	#ifdef NDR
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , r1w1ReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
-		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, r1w1WriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_read , R1W1ReadKernel , DIM, NULL, globalSize, localSize, 0, 0, NULL) );
+		CL_SAFE_CALL( clEnqueueNDRangeKernel(queue_write, R1W1WriteKernel, DIM, NULL, globalSize, localSize, 0, 0, NULL) );
 	#else
-		CL_SAFE_CALL( clEnqueueTask(queue_read , r1w1ReadKernel , 0, NULL, NULL) );
-		CL_SAFE_CALL( clEnqueueTask(queue_write, r1w1WriteKernel, 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_read , R1W1ReadKernel , 0, NULL, NULL) );
+		CL_SAFE_CALL( clEnqueueTask(queue_write, R1W1WriteKernel, 0, NULL, NULL) );
 	#endif
 		clFinish(queue_write);
 
 		GetTime(end);
-		totalr1w1Time += TimeDiff(start, end);
+		totalR1W1Time += TimeDiff(start, end);
 	}
 
-	// verify r1w1 kernel
+	// verify R1W1 kernel
 	if (verify)
 	{
 		// read data back to host
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 		CL_SAFE_CALL(clEnqueueReadBuffer(queue_write, deviceC, 1, 0, padded_size_Byte, hostC, 0, 0, 0));
 		clFinish(queue_write);
 
-		printf("Verifying \"r1w1\" kernel: ");
+		printf("Verifying \"R1W1\" kernel: ");
 		int success = 1;
 		#pragma omp parallel for ordered default(none) firstprivate(array_size, pad, hostA, hostC, verbose) shared(success)
 		for (long i = 0; i < array_size; i++)
@@ -355,9 +355,9 @@ int main(int argc, char **argv)
 
 	if (verify || verbose) printf("\n");
 
-	avgr1w1Time = totalr1w1Time / (double)iter;
-	printf("Channel bandwidth: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(1 * size_B) / (1.0E6 * avgr1w1Time), (double)(1 * size_MiB * 1000.0) / (1024.0 * avgr1w1Time), avgr1w1Time);
-	printf("Memory bandwidth : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * size_B) / (1.0E6 * avgr1w1Time), (double)(2 * size_MiB * 1000.0) / (1024.0 * avgr1w1Time), avgr1w1Time);
+	avgR1W1Time = totalR1W1Time / (double)iter;
+	printf("Channel bandwidth: %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(1 * size_B) / (1.0E6 * avgR1W1Time), (double)(1 * size_MiB * 1000.0) / (1024.0 * avgR1W1Time), avgR1W1Time);
+	printf("Memory bandwidth : %.3f GB/s (%.3f GiB/s) @%.1f ms\n", (double)(2 * size_B) / (1.0E6 * avgR1W1Time), (double)(2 * size_MiB * 1000.0) / (1024.0 * avgR1W1Time), avgR1W1Time);
 
 	clReleaseCommandQueue(queue_read);
 	clReleaseCommandQueue(queue_write);

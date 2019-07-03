@@ -33,7 +33,7 @@ channel CHAN_WIDTH sch_copy_in1  __attribute__((depth(16))) __attribute__((io("k
 
 #ifdef FPGA_1
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
-__kernel void r1w1_read(__global const float* restrict a, const int pad)
+__kernel void R1W1_read(__global const float* restrict a, const int pad)
 {
 	int tid = get_global_id(0);
 	long i = tid * VEC;
@@ -52,7 +52,7 @@ __kernel void r1w1_read(__global const float* restrict a, const int pad)
 
 #elif FPGA_2
 __attribute__((reqd_work_group_size(WGS, 1, 1)))
-__kernel void r1w1_write(__global float* restrict c, const int pad)
+__kernel void R1W1_write(__global float* restrict c, const int pad)
 {
 	int tid = get_global_id(0);
 	long i = tid * VEC;
@@ -74,7 +74,7 @@ __kernel void r1w1_write(__global float* restrict c, const int pad)
 
 #ifdef FPGA_1
 __attribute__((max_global_work_dim(0)))
-__kernel void r1w1_read(__global const float* restrict a, const int pad, const long size)
+__kernel void R1W1_read(__global const float* restrict a, const int pad, const long size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{
@@ -94,7 +94,7 @@ __kernel void r1w1_read(__global const float* restrict a, const int pad, const l
 
 #elif FPGA_2
 __attribute__((max_global_work_dim(0)))
-__kernel void r1w1_write(__global float* restrict c, const int pad, const long size)
+__kernel void R1W1_write(__global float* restrict c, const int pad, const long size)
 {
 	for (long i = 0; i != size; i += VEC)
 	{
