@@ -324,7 +324,10 @@ __kernel void R2W2_write(__global       float* restrict c,
 	}
 }
 
-#else // Single Work-item kernels
+//=====================================================================
+// Single Work-item Kernels
+//=====================================================================
+#else
 
 //=======================
 // Read One - Write Zero

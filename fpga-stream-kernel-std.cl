@@ -131,7 +131,7 @@ __kernel void R3W1(__global const float* restrict a,
 }
 
 //=======================
-// Read TWo - Write Two
+// Read Two - Write Two
 //=======================
 __attribute__((reqd_work_group_size(BLOCK_X / VEC, 1, 1)))
 __kernel void R2W2(__global const float* restrict a,
