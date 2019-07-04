@@ -751,7 +751,7 @@ int main(int argc, char **argv)
 
 	int extra_halo_x = ((dim_x % valid_blk_x >= halo) || (dim_x % valid_blk_x == 0)) ? 0 : halo - (dim_x % valid_blk_x); // in case the halo width in the last block is not fully traversed
 	int extra_halo_y = ((dim_y % valid_blk_y >= halo) || (dim_y % valid_blk_y == 0)) ? 0 : halo - (dim_y % valid_blk_y); // in case the halo width in the last block is not fully traversed
-	long totalSize_B = ((num_blk_x * BLOCK_X) * (num_blk_y * BLOCK_X) - ((last_x + 2 * halo) * (last_y + 2 * halo) - ((dim_x - extra_halo_x) * (dim_y - extra_halo_y))) - (num_blk_x - 1 + num_blk_y - 1) * (2 * halo) * halo - ((last_x + halo + extra_halo_x - dim_x) * (num_blk_y - 1) + (last_y + halo + extra_halo_y - dim_y) * (num_blk_x - 1)) * 2 * halo) * dim_z * sizeof(float);
+	long totalSize_B = ((num_blk_x * BLOCK_X) * (num_blk_y * BLOCK_Y) - ((last_x + 2 * halo) * (last_y + 2 * halo) - ((dim_x - extra_halo_x) * (dim_y - extra_halo_y))) - (num_blk_x - 1 + num_blk_y - 1) * (2 * halo) * halo - ((last_x + halo + extra_halo_x - dim_x) * (num_blk_y - 1) + (last_y + halo + extra_halo_y - dim_y) * (num_blk_x - 1)) * 2 * halo) * dim_z * sizeof(float);
 	long redundancy_B = totalSize_B - size_B;
 
 	printf("Redundancy: %.2f%%\n", ((float)redundancy_B * 100.0)/(float)totalSize_B);
