@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 	char clOptions[200] = "";
 
 #ifndef INTEL_FPGA
-	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DBLOCK_X=%d ", VEC, BLOCK_X);
+	sprintf(clOptions + strlen(clOptions), "-DVEC=%d -DBLOCK_X=%d -DBLOCK_Y=%d ", VEC, BLOCK_X, BLOCK_Y);
 #endif
 
 #ifdef NDR
