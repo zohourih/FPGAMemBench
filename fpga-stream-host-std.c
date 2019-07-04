@@ -179,6 +179,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (halo >= BLOCK_X/2)
+	{
+		printf("Halo size must be smaller than half of the block size!\n");
+		exit(-1);
+	}
+
 	// set array size based in input buffer size, default is 256k floats (= 100 MiB)
 	long size_B = (long)size_MiB * 1024 * 1024;
 	long array_size = size_B / sizeof(float);
