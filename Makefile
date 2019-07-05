@@ -1,4 +1,4 @@
-NAME = fpga-stream
+NAME = fpga-mem-bench
 HOST_BINARY = $(NAME)
 HOST = $(NAME)-host
 KERNEL = $(NAME)-kernel
