@@ -9,7 +9,7 @@
 #ifdef NDR
 
 //=======================
-// Read One - Write ONE
+// Read One - Write One
 //=======================
 __kernel void R1W1(__global const float* restrict a,
                    __global       float* restrict d,
