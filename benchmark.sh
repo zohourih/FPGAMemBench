@@ -101,9 +101,9 @@ do
 	freq=`cat $folder/$name/acl_quartus_report.txt | grep Actual | cut -d " " -f 4 | xargs printf %0.2f`
 
 	make clean >/dev/null 2>&1; make $type INTEL_FPGA=1 HOST_ONLY=1 VEC=$VEC BSIZE=$BSIZE NO_INTER=$nointer NDR=$ndr >/dev/null 2>&1
-	rm fpga-stream-kernel.aocx >/dev/null 2>&1
-	ln -s "$folder/$i" fpga-stream-kernel.aocx
-	aocl program acl0 fpga-stream-kernel.aocx >/dev/null 2>&1
+	rm fpga-mem-bench-kernel.aocx >/dev/null 2>&1
+	ln -s "$folder/$i" fpga-mem-bench-kernel.aocx
+	aocl program acl0 fpga-mem-bench-kernel.aocx >/dev/null 2>&1
 
 	for ((halo = $halo_start ; halo <= $halo_end ; halo += $halo_step))
 	do
@@ -135,7 +135,7 @@ do
 
 		for ((pad = $pad_start ; pad <= $pad_end ; pad++))
 		do
-			out=`DEVICE_TYPE=FPGA ./fpga-stream $size_switch -n $iter -pad $pad $overlap_switch $verify 2>&1`
+			out=`DEVICE_TYPE=FPGA ./fpga-mem-bench $size_switch -n $iter -pad $pad $overlap_switch $verify 2>&1`
 			#echo "$out" >> ast.txt
 
 			copy=`echo "$out" | grep "Copy:" | cut -d " " -f 2`
