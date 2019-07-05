@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 	// load kernel file and build program
 #ifdef INTEL_FPGA
 	size_t kernelFileSize;
-	char *kernelSource = read_kernel("fpga-stream-kernel.aocx", &kernelFileSize);
+	char *kernelSource = read_kernel("fpga-mem-bench-kernel.aocx", &kernelFileSize);
 	cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
 	if(error != CL_SUCCESS)
 	{
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 #else // for CPU/GPUs
 	#if defined(BLK3D)
 		size_t kernelFileSize;
-		char *kernelSource = read_kernel("fpga-stream-kernel-blk3d.cl", &kernelFileSize);
+		char *kernelSource = read_kernel("fpga-mem-bench-kernel-blk3d.cl", &kernelFileSize);
 
 		cl_program prog = clCreateProgramWithSource(context, 1, (const char**)&kernelSource, NULL, &error);
 		if(error != CL_SUCCESS)

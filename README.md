@@ -1,7 +1,7 @@
-# FPGA-Stream
+# FPGAMemBench
 
-Stream benchmark for Intel FPGAs to measure memory bandwidth of OpenCL-supported boards
-Inspired by BabelStream: https://github.com/UoB-HPC/BabelStream/commits/master
+Memory benchmark for Intel FPGAs to measure memory bandwidth of OpenCL-supported boards
+Supports different blocking shapes, block overlapping and padding
 
 # To enable Fmax Override:
 

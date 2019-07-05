@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 
 	// load kernel file and build program
 	size_t kernelFileSizeFPGA1, kernelFileSizeFPGA2;
-	char *kernelSourceFPGA1 = read_kernel("fpga-stream-kernel_FPGA_1.aocx", &kernelFileSizeFPGA1);
+	char *kernelSourceFPGA1 = read_kernel("fpga-mem-bench-kernel_FPGA_1.aocx", &kernelFileSizeFPGA1);
 	cl_program progFPGA1 = clCreateProgramWithBinary(context, 1, &deviceList[0], &kernelFileSizeFPGA1, (const unsigned char**)&kernelSourceFPGA1, NULL, &error);
 	if(error != CL_SUCCESS)
 	{
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	char *kernelSourceFPGA2 = read_kernel("fpga-stream-kernel_FPGA_2.aocx", &kernelFileSizeFPGA2);
+	char *kernelSourceFPGA2 = read_kernel("fpga-mem-bench-kernel_FPGA_2.aocx", &kernelFileSizeFPGA2);
 	cl_program progFPGA2 = clCreateProgramWithBinary(context, 1, &deviceList[1], &kernelFileSizeFPGA2, (const unsigned char**)&kernelSourceFPGA2, NULL, &error);
 	if(error != CL_SUCCESS)
 	{
