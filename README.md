@@ -1,7 +1,7 @@
 # FPGAMemBench
 
-Memory benchmark for Intel FPGAs to measure memory bandwidth of OpenCL-supported boards
-Supports different blocking shapes, block overlapping and padding
+Memory benchmark for Intel FPGAs to measure memory bandwidth of OpenCL-supported boards.
+Supports different blocking shapes, block overlapping and padding.
 
 # To enable Fmax Override:
 
