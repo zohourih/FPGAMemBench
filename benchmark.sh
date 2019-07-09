@@ -37,11 +37,11 @@ then
 fi
 if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]] || [[ "$3" == "--pad" ]]
 then
-	pad_end=16
+	pad_end=32
 fi
 if [[ "$1" == "--halo" ]] || [[ "$2" == "--halo" ]] || [[ "$3" == "--halo" ]]
 then
-	halo_end=16
+	halo_end=32
 fi
 
 echo "Type" | xargs printf "%-9s"
@@ -54,7 +54,7 @@ echo "Size" | xargs printf "%-15s"
 echo "Pad" | xargs printf "%-6s"
 echo "Halo" | xargs printf "%-6s"
 echo "Performance\ (GB/s)" | xargs printf "%-36s"
-echo "Efficiency\ (%)" | xargs printf "%-26s"
+echo "Efficiency\ (%)" | xargs printf "%-31s"
 if [[ "$verify" == "--verify" ]]
 then
 	echo "Verification" | xargs printf "%-11s"
@@ -210,14 +210,14 @@ do
 			if [[ "$type" == "std" ]] || [[ "$type" == "chstd" ]]
 			then
 				echo "$R1W0|$R1W1|$R2W1|$R3W1|$R2W2" | xargs printf "%-36s"
-				echo "$R1W0_eff|$R1W1_eff|$R2W1_eff|$R3W1_eff|$R2W2_eff" | xargs printf "%-26s"
+				echo "$R1W0_eff|$R1W1_eff|$R2W1_eff|$R3W1_eff|$R2W2_eff" | xargs printf "%-31s"
 				if [[ "$verify" == "--verify" ]]
 				then
 					echo "$R1W0_ver|$R1W1_ver|$R2W1_ver|$R3W1_ver|$R2W2_ver" | xargs printf "%-11s"
 				fi
 			else
 				echo "$R1W1|$R2W1|$R3W1|$R2W2" | xargs printf "%-36s"
-				echo "$R1W1_eff|$R2W1_eff|$R3W1_eff|$R2W2_eff" | xargs printf "%-26s"
+				echo "$R1W1_eff|$R2W1_eff|$R3W1_eff|$R2W2_eff" | xargs printf "%-31s"
 				if [[ "$verify" == "--verify" ]]
 				then
 					echo "$R1W1_ver|$R2W1_ver|$R3W1_ver|$R2W2_ver" | xargs printf "%-11s"
