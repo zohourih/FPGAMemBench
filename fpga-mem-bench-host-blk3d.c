@@ -224,7 +224,7 @@ int main(int argc, char **argv)
 #ifdef INTEL_FPGA
 	size_t kernelFileSize;
 	char *kernelSource = read_kernel("fpga-mem-bench-kernel.aocx", &kernelFileSize);
-	cl_program prog = clCreateProgramWithBinary(context, deviceCount, deviceList, &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
+	cl_program prog = clCreateProgramWithBinary(context, 1, &deviceList[0], &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
 	if(error != CL_SUCCESS)
 	{
 		printf("ERROR: clCreateProgramWithBinary() failed with error: ");
@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 #endif
 
 	// compile kernel file
-	clBuildProgram_SAFE(prog, deviceCount, deviceList, clOptions, NULL, NULL);
+	clBuildProgram_SAFE(prog, 1, &deviceList[0], clOptions, NULL, NULL);
 
 	// create kernel objects
 #if defined(BLK3D)
