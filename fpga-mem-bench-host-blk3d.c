@@ -35,7 +35,8 @@ static cl_command_queue queue;
 static cl_command_queue queue_read, queue_write;
 #endif
 static cl_device_id*    deviceList;
-static cl_int           deviceCount;
+static cl_uint          deviceCount;
+static cl_uint          deviceID = 0; // default to first device
 
 static inline void init()
 {
@@ -48,7 +49,7 @@ static inline void init()
 
 	display_device_info(&platforms, &platformCount);
 	select_device_type(&deviceType);
-	validate_selection(platforms, &platformCount, ctxprop, &deviceType);
+	validate_selection(platforms, &platformCount, ctxprop, &deviceType, deviceID);
 	
 	// create OpenCL context
 	context = clCreateContextFromType(ctxprop, deviceType, NULL, NULL, &error);
@@ -61,7 +62,7 @@ static inline void init()
 
 	// get list of devices
 	CL_SAFE_CALL( clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL, &deviceSize) );
-	deviceCount = (int) (deviceSize / sizeof(cl_device_id));
+	deviceCount = deviceSize / sizeof(cl_device_id);
 	if(deviceCount < 1)
 	{
 		printf("ERROR: No devices found.\n");
@@ -80,7 +81,7 @@ static inline void init()
 
 	// create command queue for the first device
 #if defined(BLK3D)
-	queue = clCreateCommandQueue(context, deviceList[0], 0, NULL);
+	queue = clCreateCommandQueue(context, deviceList[deviceID], 0, NULL);
 	if(!queue)
 	{
 		printf("ERROR: clCreateCommandQueue(queue) failed with error code: ");
@@ -88,7 +89,7 @@ static inline void init()
 		exit(-1);
 	}
 #elif defined(CHBLK3D)
-	queue_read = clCreateCommandQueue(context, deviceList[0], 0, NULL);
+	queue_read = clCreateCommandQueue(context, deviceList[deviceID], 0, NULL);
 	if(!queue_read)
 	{
 		printf("ERROR: clCreateCommandQueue(queue_read) failed with error code: ");
@@ -96,7 +97,7 @@ static inline void init()
 		exit(-1);
 	}
 
-	queue_write = clCreateCommandQueue(context, deviceList[0], 0, NULL);
+	queue_write = clCreateCommandQueue(context, deviceList[deviceID], 0, NULL);
 	if(!queue_write)
 	{
 		printf("ERROR: clCreateCommandQueue(queue_write) failed with error code: ");
@@ -110,7 +111,7 @@ static inline void init()
 
 static inline void usage(char **argv)
 {
-	printf("\nUsage: %s -x <row width> -y <column height> -z <plane size> -n <number of iterations> -pad <array padding indexes> -pad_x <row padding indexes> -pad_y <column padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
+	printf("\nUsage: %s -id <OpenCL device ID> -x <row width> -y <column height> -z <plane size> -n <number of iterations> -pad <array padding indexes> -pad_x <row padding indexes> -pad_y <column padding indexes> -hw <halo width> --verbose --verify\n", argv[0]);
 }
 
 int main(int argc, char **argv)
@@ -140,7 +141,12 @@ int main(int argc, char **argv)
 	int arg = 1;
 	while (arg < argc)
 	{
-		if(strcmp(argv[arg], "-x") == 0)
+		if(strcmp(argv[arg], "-id") == 0)
+		{
+			deviceID = atoi(argv[arg + 1]);
+			arg += 2;
+		}
+		else if(strcmp(argv[arg], "-x") == 0)
 		{
 			dim_x = atoi(argv[arg + 1]);
 			arg += 2;
@@ -224,7 +230,7 @@ int main(int argc, char **argv)
 #ifdef INTEL_FPGA
 	size_t kernelFileSize;
 	char *kernelSource = read_kernel("fpga-mem-bench-kernel.aocx", &kernelFileSize);
-	cl_program prog = clCreateProgramWithBinary(context, 1, &deviceList[0], &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
+	cl_program prog = clCreateProgramWithBinary(context, 1, &deviceList[deviceID], &kernelFileSize, (const unsigned char**)&kernelSource, NULL, &error);
 	if(error != CL_SUCCESS)
 	{
 		printf("ERROR: clCreateProgramWithBinary() failed with error: ");
@@ -260,7 +266,7 @@ int main(int argc, char **argv)
 #endif
 
 	// compile kernel file
-	clBuildProgram_SAFE(prog, 1, &deviceList[0], clOptions, NULL, NULL);
+	clBuildProgram_SAFE(prog, 1, &deviceList[deviceID], clOptions, NULL, NULL);
 
 	// create kernel objects
 #if defined(BLK3D)

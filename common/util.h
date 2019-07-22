@@ -71,6 +71,8 @@ inline static void device_info_ulongarray(cl_device_id device, cl_device_info pa
 		fprintf(stderr, "%lu, ", size[i]);
 	}
 	fprintf(stderr, "\n");
+
+	free(size);
 }
 
 // Displays available platforms and devices
@@ -124,7 +126,9 @@ inline static void display_device_info(cl_platform_id** platforms, cl_uint* plat
 				device_info_ulong(devices[j]      , CL_DEVICE_LOCAL_MEM_SIZE           , "LOCAL_MEM_SIZE"           );
 				device_info_device_type(devices[j], CL_DEVICE_TYPE                     , "TYPE"                     );
 				fprintf(stderr, "================================================================================\n\n");
-			}  
+			}
+
+			free(devices);
 		}
 	}
 }
@@ -198,7 +202,7 @@ inline static void select_device_type(cl_device_type* device_type)
 }
 
 // Validates device type selection and exports context properties
-inline static void validate_selection(cl_platform_id* platforms, cl_uint* platformCount, cl_context_properties* ctxprop, cl_device_type* device_type)
+inline static void validate_selection(cl_platform_id* platforms, cl_uint* platformCount, cl_context_properties* ctxprop, cl_device_type* device_type, cl_uint deviceID)
 {
 	unsigned i;
 	cl_int error;
@@ -226,11 +230,18 @@ inline static void validate_selection(cl_platform_id* platforms, cl_uint* platfo
 				exit(-1);
 			}
 		}
+		else if (deviceID >= deviceCount)
+		{
+				fprintf(stderr, "================================================================================\n");
+				fprintf(stderr, "Platform number: %d\n", i);
+				fprintf(stderr, "No matching device ID, moving to next platform, if any.\n");
+				fprintf(stderr, "================================================================================\n\n");
+		}
 		else
 		{
 			devices = (cl_device_id*) malloc(sizeof(cl_device_id) * deviceCount);
 			CL_SAFE_CALL( clGetDeviceIDs(platforms[i], *device_type, deviceCount, devices, NULL) );
-			CL_SAFE_CALL( clGetDeviceInfo(devices[0], CL_DEVICE_NAME, STRING_BUFFER_LEN, &deviceName, NULL) );
+			CL_SAFE_CALL( clGetDeviceInfo(devices[deviceID], CL_DEVICE_NAME, STRING_BUFFER_LEN, &deviceName, NULL) );
 			
 			fprintf(stderr, "================================================================================\n");
 			fprintf(stderr, "Selected platform number: %d\n", i);
@@ -242,6 +253,8 @@ inline static void validate_selection(cl_platform_id* platforms, cl_uint* platfo
 			ctxprop[0] = CL_CONTEXT_PLATFORM;
 			ctxprop[1] = (cl_context_properties)platforms[i];
 			ctxprop[2] = 0;
+
+			free(devices);
 			break;
 		}
 	}
@@ -374,6 +387,8 @@ inline static void clBuildProgram_SAFE(cl_program program, cl_uint num_devices, 
 			fprintf(stderr, "Build options: %s\n\n", options);
 			fprintf(stderr, "%s", log);
 			fprintf(stderr, "================================ End of compilation log ================================\n");
+
+			free(log);
 		}
 		exit(-1);
 	}
