@@ -118,7 +118,7 @@ inline static void display_device_info(cl_platform_id** platforms, cl_uint* plat
 			for (j = 0; j < deviceCount; j++)
 			{
 				fprintf(stderr, "================================================================================\n");
-				fprintf(stderr, "Platform number %d, device number %d (device count: %d):\n\n", i, j, deviceCount);
+				fprintf(stderr, "Platform number %d, device ID %d (device count: %d):\n\n", i, j, deviceCount);
 				device_info_string(devices[j]     , CL_DEVICE_VENDOR                   , "VENDOR"                   );
 				device_info_string(devices[j]     , CL_DEVICE_NAME                     , "NAME"                     );
 				device_info_string(devices[j]     , CL_DEVICE_VERSION                  , "VERSION"                  );
