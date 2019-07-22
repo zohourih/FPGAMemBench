@@ -13,17 +13,21 @@
 #define AOC_ALIGNMENT 64
 
 // For functions that "return" the error code
-#define CL_SAFE_CALL(...) do {																		\
+#define CL_SAFE_CALL(...) do																			\
+{																								\
 	cl_int __ret = __VA_ARGS__;																		\
 	if (__ret != CL_SUCCESS) {																		\
-		fprintf(stderr, "%s:%d: %s failed with error code ", __FILE__, __LINE__, extractFunctionName(#__VA_ARGS__) );	\
+		char* output = (char*) malloc(strlen(#__VA_ARGS__) * sizeof(char));									\
+		extractFunctionName(#__VA_ARGS__, output);														\
+		fprintf(stderr, "%s:%d: %s failed with error code ", __FILE__, __LINE__, output);						\
 		display_error_message(__ret, stderr);															\
+		free(output);																				\
 		exit(-1);																					\
 	}																							\
 } while (0)
 
 // Declaring some of the functions here to avoid reordering them
-inline static char* extractFunctionName(const char* input);
+inline static void extractFunctionName(const char* input, char* output);
 inline static void display_error_message(cl_int errcode, FILE *out);
 
 
@@ -334,12 +338,11 @@ inline static void display_error_message(cl_int errcode, FILE *out)
 }
 
 // Extract function name from __VA_ARGS__
-inline static char* extractFunctionName(const char* input)
+inline static void extractFunctionName(const char* input, char* output)
 {
 	unsigned i;
-	char* output = (char*) malloc(strlen(input) * sizeof(char));
 	
-	for (i = 0; i<strlen(input); i++)
+	for (i = 0; i < strlen(input); i++)
 	{
 		output[i] = input[i];
 		if ( input[i] == '(' )
@@ -347,10 +350,8 @@ inline static char* extractFunctionName(const char* input)
 			break;
 		}
 	}
-	output[i+1] = ')';
-	output[i+2] = '\0';
-	
-	return output;
+	output[i + 1] = ')';
+	output[i + 2] = '\0';
 }
 
 // Safe version of clBuildProgram() that automatically prints compilation log in case of failure
