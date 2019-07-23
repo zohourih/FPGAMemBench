@@ -70,7 +70,7 @@ ifeq ($(INTEL_FPGA),1)
 	endif
 
 	ifdef DEPTH
-		KERNEL_FLAGS += -DDEPTH $(DEPTH)
+		KERNEL_FLAGS += -DDEPTH=$(DEPTH)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_depth$(DEPTH)
 	endif
 
