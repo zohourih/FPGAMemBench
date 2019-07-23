@@ -13,20 +13,24 @@
 	#define write_channel write_channel_intel
 #endif
 
+#ifndef DEPTH
+	#define DEPTH 16
+#endif
+
 typedef struct
 {
 	float data[VEC];
 } CHAN_WIDTH;
 
-channel CHAN_WIDTH ch_R1W0   __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R1W1   __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R2W1_a __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R2W1_b __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R3W1_a __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R3W1_b __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R3W1_c __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R2W2_a __attribute__((depth(16)));
-channel CHAN_WIDTH ch_R2W2_b __attribute__((depth(16)));
+channel CHAN_WIDTH ch_R1W0   __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R1W1   __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R2W1_a __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R2W1_b __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R3W1_a __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R3W1_b __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R3W1_c __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R2W2_a __attribute__((depth(DEPTH)));
+channel CHAN_WIDTH ch_R2W2_b __attribute__((depth(DEPTH)));
 
 //=====================================================================
 // NDRange Kernels

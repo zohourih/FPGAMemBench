@@ -69,6 +69,11 @@ ifeq ($(INTEL_FPGA),1)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_nocache
 	endif
 
+	ifdef DEPTH
+		KERNEL_FLAGS += -DDEPTH $(DEPTH)
+		EXTRA_CONFIG := $(EXTRA_CONFIG)_depth$(DEPTH)
+	endif
+
 	ifdef TFMAX
 		KERNEL_FLAGS += $(DASH)fmax$(SPACE)$(TFMAX)
 		EXTRA_CONFIG := $(EXTRA_CONFIG)_tfmax$(TFMAX)

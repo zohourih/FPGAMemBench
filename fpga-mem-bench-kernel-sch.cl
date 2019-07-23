@@ -13,6 +13,10 @@
 	#define write_channel write_channel_intel
 #endif
 
+#ifndef DEPTH
+	#define DEPTH 16
+#endif
+
 #define HALF_VEC VEC/2
 #define WGS 64
 
@@ -22,11 +26,11 @@ typedef struct
 } CHAN_WIDTH;
 
 #ifdef FPGA_1
-channel CHAN_WIDTH sch_copy_out0 __attribute__((depth(16))) __attribute__((io("kernel_output_ch0" )));
-channel CHAN_WIDTH sch_copy_out1 __attribute__((depth(16))) __attribute__((io("kernel_output_ch1" )));
+channel CHAN_WIDTH sch_copy_out0 __attribute__((depth(DEPTH))) __attribute__((io("kernel_output_ch0" )));
+channel CHAN_WIDTH sch_copy_out1 __attribute__((depth(DEPTH))) __attribute__((io("kernel_output_ch1" )));
 #else
-channel CHAN_WIDTH sch_copy_in0  __attribute__((depth(16))) __attribute__((io("kernel_input_ch0")));
-channel CHAN_WIDTH sch_copy_in1  __attribute__((depth(16))) __attribute__((io("kernel_input_ch1")));
+channel CHAN_WIDTH sch_copy_in0  __attribute__((depth(DEPTH))) __attribute__((io("kernel_input_ch0")));
+channel CHAN_WIDTH sch_copy_in1  __attribute__((depth(DEPTH))) __attribute__((io("kernel_input_ch1")));
 #endif
 
 #ifdef NDR //NDRange kernels
