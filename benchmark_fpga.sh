@@ -26,11 +26,13 @@ folder=`echo "$board"_"$version"`
 verify=""
 pad_start=0
 pad_end=0
+pad_array=(0)
 overlap=0
 halo_start=0
 halo_end=0
 halo_step=1
 halo_switch=""
+halo_array=(0)
 if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]] || [[ "$3" == "--verify" ]]
 then
 	verify="--verify"
@@ -38,10 +40,13 @@ fi
 if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]] || [[ "$3" == "--pad" ]]
 then
 	pad_end=32
+	pad_array=(0 1 2 4 8 16 32)
 fi
 if [[ "$1" == "--halo" ]] || [[ "$2" == "--halo" ]] || [[ "$3" == "--halo" ]]
 then
 	halo_end=32
+	#halo_array=(0 1 2 4 8 16 32)
+	halo_array=(1 2 4 8 16 32)
 fi
 
 echo "Type" | xargs printf "%-9s"
@@ -107,7 +112,8 @@ do
 	ln -s "$folder/$i" fpga-mem-bench-kernel.aocx
 	aocl program acl0 fpga-mem-bench-kernel.aocx >/dev/null 2>&1
 
-	for ((halo = $halo_start ; halo <= $halo_end ; halo += $halo_step))
+	#for ((halo = $halo_start ; halo <= $halo_end ; halo += $halo_step))
+	for halo in "${halo_array[@]}"
 	do
 		compute_bsize_x=$(( $BSIZE - (2 * $halo) ))
 		compute_bsize_y=$(( $BSIZE - (2 * $halo) ))
@@ -135,7 +141,8 @@ do
 			dim=$size
 		fi
 
-		for ((pad = $pad_start ; pad <= $pad_end ; pad++))
+		#for ((pad = $pad_start ; pad <= $pad_end ; pad++))
+		for pad in "${pad_array[@]}"
 		do
 			out=`DEVICE_TYPE=FPGA ./fpga-mem-bench $size_switch -n $iter -pad $pad $halo_switch $verify 2>&1`
 			#echo "$out" >> ast.txt

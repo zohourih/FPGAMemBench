@@ -15,11 +15,13 @@ size_switch=""
 verify=""
 pad_start=0
 pad_end=0
+pad_array=(0)
 overlap=0
 halo_start=0
 halo_end=0
 halo_step=1
 halo_switch=""
+halo_array=(0)
 if [[ "$1" == "--verify" ]] || [[ "$2" == "--verify" ]] || [[ "$3" == "--verify" ]]
 then
 	verify="--verify"
@@ -27,16 +29,19 @@ fi
 if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]] || [[ "$3" == "--pad" ]]
 then
 	pad_end=32
+	pad_array=(0 1 2 4 8 16 32)
 fi
 if [[ "$1" == "--halo" ]] || [[ "$2" == "--halo" ]] || [[ "$3" == "--halo" ]]
 then
 	halo_end=32
+	halo_array=(0 1 2 4 8 16 32)
 fi
 
 echo "Type" | xargs printf "%-9s"
 echo "Size" | xargs printf "%-15s"
 echo "Pad" | xargs printf "%-6s"
 echo "Halo" | xargs printf "%-6s"
+echo "Redundancy" | xargs printf "%-12s"
 echo "Performance\ (GB/s)" | xargs printf "%-41s"
 echo "Efficiency\ (%)" | xargs printf "%-31s"
 if [[ "$verify" == "--verify" ]]
@@ -61,7 +66,8 @@ fi
 
 make clean >/dev/null 2>&1; make $type NVIDIA=1 VEC=$VEC BSIZE=$BSIZE NDR=$ndr >/dev/null 2>&1
 
-for ((halo = $halo_start ; halo <= $halo_end ; halo += $halo_step))
+#for ((halo = $halo_start ; halo <= $halo_end ; halo += $halo_step))
+for halo in "${halo_array[@]}"
 do
 	compute_bsize_x=$(( $BSIZE - (2 * $halo) ))
 	compute_bsize_y=$(( $BSIZE - (2 * $halo) ))
@@ -89,10 +95,13 @@ do
 		dim=$size
 	fi
 
-	for ((pad = $pad_start ; pad <= $pad_end ; pad++))
+	#for ((pad = $pad_start ; pad <= $pad_end ; pad++))
+	for pad in "${pad_array[@]}"
 	do
 		out=`DEVICE_TYPE=GPU ./fpga-mem-bench $size_switch -n $iter -pad $pad $halo_switch -id $gpu_id $verify 2>&1`
 		#echo "$out" >> ast.txt
+
+		redundancy=`echo "$out" | grep "Redundancy:" | cut -d " " -f 2`
 
 		R1W1=`echo "$out" | grep "R1W1:" | cut -d " " -f 2`
 		R2W1=`echo "$out" | grep "R2W1:" | cut -d " " -f 2`
@@ -122,6 +131,7 @@ do
 		echo $dim | xargs printf "%-15s"
 		echo $pad | xargs printf "%-6s"
 		echo $halo | xargs printf "%-6s"
+		echo $redundancy | xargs printf "%-12s"
 		if [[ "$type" == "std" ]]
 		then
 			echo "$R1W0|$R1W1|$R2W1|$R3W1|$R2W2" | xargs printf "%-41s"
