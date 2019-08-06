@@ -1,6 +1,8 @@
 #!/bin/bash
 
 gpu=V100
+type=blk3d
+
 iter=5
 size=1024
 indexes=$(($size * 256 * 1024))
@@ -28,13 +30,25 @@ then
 fi
 if [[ "$1" == "--pad" ]] || [[ "$2" == "--pad" ]] || [[ "$3" == "--pad" ]]
 then
-	pad_end=32
-	pad_array=(0 1 2 4 8 16 32)
+	if [[ "$type" == "blk3d" ]]
+	then
+		pad_end=8
+		pad_array=(0 1 2 4 8)
+	else
+		pad_end=32
+		pad_array=(0 1 2 4 8 16 32)
+	fi
 fi
 if [[ "$1" == "--halo" ]] || [[ "$2" == "--halo" ]] || [[ "$3" == "--halo" ]]
 then
-	halo_end=32
-	halo_array=(0 1 2 4 8 16 32)
+	if [[ "$type" == "blk3d" ]]
+	then
+		halo_end=8
+		halo_array=(0 1 2 4 8)
+	else
+		halo_end=32
+		halo_array=(0 1 2 4 8 16 32)
+	fi
 fi
 
 echo "Type" | xargs printf "%-9s"
@@ -50,16 +64,25 @@ then
 fi
 echo
 
-type=std
 ndr=1
 VEC=1
 if [[ $gpu == "V100" ]]
 then
-	BSIZE=512
+	if [[ "$type" == "blk3d" ]]
+	then
+		BSIZE=32
+	else
+		BSIZE=512
+	fi
 	gpu_id=1
 	max_bw=897.0
 else
-	BSIZE=128
+	if [[ "$type" == "blk3d" ]]
+	then
+		BSIZE=32
+	else
+		BSIZE=128
+	fi
 	gpu_id=2
 	max_bw=249.6
 fi
