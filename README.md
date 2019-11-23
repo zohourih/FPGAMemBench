@@ -8,9 +8,9 @@ Supports different blocking shapes, block overlapping and padding.
 
 Refer to the following publication:
 
-- Hamid Reza Zohouri, Satoshi Matsuoka, “The Memory Controller Wall: Benchmarking the Intel FPGA SDK for OpenCL Memory Interface” in 5th International Workshop on Heterogeneous High-performance Reconfigurable Computing (H2RC'19), Denver, CO, USA, Nov. 2019. [Paper](https://arxiv.org/abs/1910.06726) [Slides](https://h2rc.cse.sc.edu/slides/academic_1_2_Zohouri.pdf)
+- Hamid Reza Zohouri, Satoshi Matsuoka, “The Memory Controller Wall: Benchmarking the Intel FPGA SDK for OpenCL Memory Interface” in 5th International Workshop on Heterogeneous High-performance Reconfigurable Computing (H2RC'19), Denver, CO, USA, Nov. 2019. [[Paper]](https://arxiv.org/abs/1910.06726) [[Slides]](https://h2rc.cse.sc.edu/slides/academic_1_2_Zohouri.pdf)
 
-Results used for this publication are included in the "Results" folder in the repository. If you use this benchmark suite, please cite the above publication.
+Results used for this publication are included in the "results" folder in the repository. If you use this benchmark suite, please cite the above publication.
 
 
 # Make
