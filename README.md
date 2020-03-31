@@ -17,7 +17,7 @@ Results used for this publication are included in the "results" folder in the re
 
 Command:
 
-`make *make_target* -D*make_options*`
+`make *make_target* *make_options*`
 
 &nbsp;
 
@@ -26,21 +26,21 @@ Command:
 | **std**      | Standard (1D blocking) kernel. |
 | **chstd**    | Channelized version of the above kernel. |
 | **blk2d**    | 2D overlapped (i.e. 1.5D) kernel. |
-| **chblk2d**  | Channelized version of the above kernel. | | | |
-| **blk3d**    | 3D overlapped (i.e. 2.5D) kernel. | | |
-| **chblk3d**  | Channelized version of the above kernel. | |
+| **chblk2d**  | Channelized version of the above kernel. |
+| **blk3d**    | 3D overlapped (i.e. 2.5D) kernel. | 
+| **chblk3d**  | Channelized version of the above kernel. | 
 | **sch**      | Serial channel kernel designed for the Nallatech 510T board. |
 
 &nbsp;
 
-| Make options (passed with -D) | Description | Default |
+| Make options                  | Description | Default |
 | ---                           | ---         | ---     |
 | **INTEL_FPGA=1** | Compile for Intel FPGAs. Relevant environmental variables should be set as defined in Intel's documentation. | Disabled |
 | **AMD=1** | Compile for AMD's OpenCL SDK. Requires the "AMDAPPSDKROOT" environmental variable to be defined. Channelized kernels not supported. | Disabled |
 | **NVIDIA=1** | Compile for NVIDIA's OpenCL SDK. Requires the "CUDA_DIR" environmental variable to be defined. Channelized kernels not supported. | Disabled |
-| **HOST_ONLY** | Only compile host code without compiling kernel code. | Disabled |
-| **KERNEL_ONLY** | Only compile kernel code without compiling host code. | Disabled |
-| **EMULATOR** | Compile for emulation. | Disabled |
+| **HOST_ONLY=1** | Only compile host code without compiling kernel code. | Disabled |
+| **KERNEL_ONLY=1** | Only compile kernel code without compiling host code. | Disabled |
+| **EMULATOR=1** | Compile for emulation. | Disabled |
 | **FOLDER=VALUE** | Override compilation folder. | Same folder as the makefile. |
 | **BOARD=VALUE** | Override board name. If BSP supports only one board/hardware, that board will be automatically chosen without needing to supply this option. | Disabled |
 | **NDR=1** | Compile NDRange variation of the kernel. | Unset which will compile the Single Work-item variation |
