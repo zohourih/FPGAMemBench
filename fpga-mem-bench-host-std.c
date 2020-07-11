@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 
 	printf("Vector size:           %d\n", VEC);
 	printf("Array padding:         %d\n", pad);
-	printf("Halo width             %d\n\n", halo);
+	printf("Halo width:            %d\n\n", halo);
 
 	// create host buffers
 	if (verbose) printf("Creating host buffers...\n");
