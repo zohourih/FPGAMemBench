@@ -12,6 +12,11 @@ Refer to the following publication:
 
 Results used for this publication are included in the "results" folder in the repository. If you use this benchmark suite, please cite the above publication.
 
+## Contact
+
+Hamid Reza Zohouri <br />
+https://www.linkedin.com/in/hamid-reza-zohouri-phd/ <br />
+http://github.com/zohourih
 
 # Make
 
